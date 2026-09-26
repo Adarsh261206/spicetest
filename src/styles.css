@@ -243,7 +243,7 @@
 }
 
 .legacy-post p {
-  margin-top: 1.1rem;
+  margin-top: 1rem;
   color: var(--color-muted-foreground);
 }
 
@@ -256,39 +256,78 @@
   color: var(--color-foreground);
 }
 
-.legacy-post h2,
-.legacy-post h3,
-.legacy-post h4 {
-  margin-top: 2.25rem;
-  line-height: 1.2;
-  color: var(--color-foreground);
-}
-
-.legacy-post h2 {
-  font-size: clamp(1.5rem, 2.4vw, 2.125rem);
+.legacy-post i,
+.legacy-post em {
+  color: var(--color-muted-foreground);
 }
 
 .legacy-post h3 {
-  font-size: 1.35rem;
+  margin-top: 2.5rem;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.15;
+  color: var(--color-foreground);
+}
+
+.legacy-post h3:first-child {
+  margin-top: 0;
+}
+
+.legacy-post h4 {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+  line-height: 1.3;
+  color: var(--color-foreground);
 }
 
 .legacy-post ul,
 .legacy-post ol {
-  margin-top: 1rem;
-  padding-left: 1.5rem;
+  margin-top: 0.9rem;
   color: var(--color-muted-foreground);
 }
 
 .legacy-post ul {
-  list-style: disc;
+  list-style: none;
+  padding-left: 0;
+}
+
+.legacy-post ul > li {
+  position: relative;
+  margin-top: 0.45rem;
+  padding-left: 1.4rem;
+}
+
+.legacy-post ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 0.72em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--color-primary);
 }
 
 .legacy-post ol {
-  list-style: decimal;
+  list-style: none;
+  counter-reset: legacy-step;
+  padding-left: 0;
 }
 
-.legacy-post li {
-  margin-top: 0.4rem;
+.legacy-post ol > li {
+  position: relative;
+  margin-top: 0.9rem;
+  padding-left: 3rem;
+  counter-increment: legacy-step;
+}
+
+.legacy-post ol > li::before {
+  content: counter(legacy-step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: var(--color-primary);
 }
 
 .legacy-post a {
@@ -297,17 +336,30 @@
   text-underline-offset: 3px;
 }
 
-.legacy-post img {
-  margin: 1.75rem auto;
+.legacy-post figure {
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.legacy-post figure img {
+  display: inline-block;
   max-width: 100%;
   height: auto;
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
 }
 
-.legacy-post .separator {
-  clear: both;
-  text-align: center;
+.legacy-post figcaption {
+  margin-top: 0.6rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--color-muted-foreground);
+}
+
+.legacy-post img {
+  max-width: 100%;
+  height: auto;
 }
 
 .legacy-post blockquote {
@@ -317,17 +369,4 @@
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.25rem;
-}
-
-.legacy-post table {
-  width: 100%;
-  margin-top: 1.5rem;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-.legacy-post td,
-.legacy-post th {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--border);
 }

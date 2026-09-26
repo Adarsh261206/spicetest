@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { articleBySlug, articles, creatorByHandle } from "@/lib/data";
-import { formatLegacyDate, legacyBySlug, legacyCover, legacyPosts } from "@/lib/legacy";
+import { formatLegacyDate, legacyBody, legacyBySlug, legacyCover, legacyPosts } from "@/lib/legacy";
 import { Reveal } from "@/components/site/Reveal";
 
 export const Route = createFileRoute("/journal/$slug")({
@@ -123,6 +124,7 @@ function LegacyArticlePage({ slug }: { slug: string }) {
   const legacy = legacyBySlug(slug)!;
   const author = creatorByHandle("viya-sheth");
   const more = legacyPosts.filter((p) => p.slug !== slug).slice(0, 3);
+  const body = useMemo(() => legacyBody(legacy), [legacy]);
 
   return (
     <article className="pb-10">
@@ -168,10 +170,10 @@ function LegacyArticlePage({ slug }: { slug: string }) {
         </div>
       </header>
 
-      {/* Sanitized at import time (scripts/import-blogger.mjs). */}
+      {/* Normalized at render time (legacyBody): clean paragraphs, headings, lists. */}
       <div
         className={`${shell} legacy-post mt-14 max-w-3xl`}
-        dangerouslySetInnerHTML={{ __html: legacy.html }}
+        dangerouslySetInnerHTML={{ __html: body }}
       />
 
       <Reveal as="section" className={`${shell} mt-20`}>
