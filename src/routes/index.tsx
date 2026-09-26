@@ -6,26 +6,23 @@ import {
   articles,
   brand,
   categories,
-  collections,
-  creators,
   cuisineRegions,
   featuredArticle,
   featuredRecipe,
-  popularRecipes,
   popularSearches,
   quickFilters,
   recipes,
   spices,
 } from "@/lib/data";
+import { listPublishedPostsFn } from "@/lib/posts.api";
+import type { DbPostPublic } from "@/lib/blocks";
+import { formatLegacyDate } from "@/lib/legacy";
 import { RecipeCard } from "@/components/site/RecipeCard";
 import { CategoryRail } from "@/components/site/CategoryRail";
-import { CreatorCard } from "@/components/site/CreatorCard";
-import { CollectionCard } from "@/components/site/CollectionCard";
-import { TrendingList } from "@/components/site/TrendingList";
-import { AIRecipeAssistant } from "@/components/site/AIRecipeAssistant";
 import { Reveal } from "@/components/site/Reveal";
 
 export const Route = createFileRoute("/")({
+  loader: async () => ({ fresh: await listPublishedPostsFn() }),
   head: () => ({
     meta: [
       { title: "Spice N Flavors — A world of flavor" },
@@ -198,53 +195,6 @@ function Home() {
         </div>
       </section>
 
-      {/* SPICE STRIP */}
-      <Reveal as="section" className={`${shell} mt-6`}>
-        <div className="rule-hair flex flex-wrap items-end justify-between gap-4 pt-10">
-          <h2 className="display-lg mt-6 max-w-lg">The spices that shape our food.</h2>
-          <p className="max-w-xs text-sm text-muted-foreground">
-            Six things that do most of the work in an Indian kitchen — and how to get them to
-            behave.
-          </p>
-        </div>
-        <ul className="no-scrollbar -mx-5 mt-10 flex gap-5 overflow-x-auto px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:grid lg:grid-cols-6 lg:px-0">
-          {spices.map((s) => (
-            <li key={s.name} className="lift group w-[13rem] shrink-0 lg:w-auto">
-              <div className="zoom-media overflow-hidden rounded-2xl border border-border">
-                <img
-                  src={s.image}
-                  alt={`${s.name} — ${s.notes}`}
-                  loading="lazy"
-                  className="aspect-square w-full object-cover"
-                />
-              </div>
-              <h3 className="mt-4 font-serif text-lg">{s.name}</h3>
-              <p className="text-xs text-muted-foreground">{s.notes}</p>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground/90">{s.use}</p>
-            </li>
-          ))}
-        </ul>
-      </Reveal>
-
-      {/* EDITORIAL INTRO */}
-      <Reveal as="section" className={`${shell} mt-24`}>
-        <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div className="max-w-2xl">
-            <h2 className="display-lg">Food is more than a recipe.</h2>
-            <p className="mt-6 font-serif text-xl italic leading-relaxed sm:text-2xl">
-              Ratios that actually work, steps that matter, and the notes you only learn by cooking
-              a dish more than once.
-            </p>
-          </div>
-          <p className="shrink-0 border-l border-border pl-6 lg:pl-10">
-            <span className="block font-serif text-5xl text-primary">{brand.milestone.value}</span>
-            <span className="mt-1 block text-sm text-muted-foreground">
-              {brand.milestone.label}
-            </span>
-          </p>
-        </div>
-      </Reveal>
-
       {/* FEATURED RECIPE */}
       <Reveal as="section" className="mt-20 bg-vanilla py-16 sm:py-24">
         <div className={`${shell} grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]`}>
@@ -341,34 +291,6 @@ function Home() {
         </div>
       </section>
 
-      {/* POPULAR */}
-      <Reveal as="section" className={`${shell} mt-24`}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Popular</p>
-            <h2 className="display-lg mt-3">What people are cooking</h2>
-          </div>
-          <Link
-            to="/recipes"
-            search={{ q: "", category: "All", sort: "relevance" }}
-            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary"
-          >
-            All recipes
-            <ArrowRight
-              className="size-4 transition-transform duration-200 group-hover:translate-x-1"
-              strokeWidth={1.8}
-            />
-          </Link>
-        </div>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {popularRecipes.map((r, i) => (
-            <Reveal key={r.slug} delay={i * 60}>
-              <RecipeCard recipe={r} size="sm" />
-            </Reveal>
-          ))}
-        </div>
-      </Reveal>
-
       {/* CUISINES */}
       <Reveal as="section" className="mt-24 bg-secondary/70 py-16 sm:py-20">
         <div className={shell}>
@@ -416,23 +338,6 @@ function Home() {
         </div>
       </Reveal>
 
-      {/* TRENDING */}
-      <Reveal as="section" className={`${shell} mt-24`}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">This week</p>
-            <h2 className="display-lg mt-3">On the stove right now</h2>
-          </div>
-          <p className="max-w-xs text-sm text-muted-foreground">
-            The dishes readers keep coming back to — a mix of long Sunday cooks and weeknight
-            regulars.
-          </p>
-        </div>
-        <div className="mt-10">
-          <TrendingList items={recipes.slice(0, 8)} />
-        </div>
-      </Reveal>
-
       {/* BLOG */}
       <Reveal as="section" className={`${shell} mt-24`}>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -477,98 +382,8 @@ function Home() {
           </Link>
 
           <ul className="space-y-6">
-            {articles
-              .filter((a) => a.slug !== featuredArticle.slug)
-              .slice(0, 4)
-              .map((a) => (
-                <li key={a.slug} className="rule-hair pt-6 first:border-t-0 first:pt-0">
-                  <Link to="/blog/$slug" params={{ slug: a.slug }} className="group flex gap-4">
-                    <div className="zoom-media size-24 shrink-0 overflow-hidden rounded-xl border border-border">
-                      <img
-                        src={a.image}
-                        alt={a.title}
-                        loading="lazy"
-                        className="size-full object-cover"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="eyebrow">{a.category}</p>
-                      <h3 className="mt-1.5 font-serif text-lg leading-snug group-hover:text-primary">
-                        {a.title}
-                      </h3>
-                      <p className="mt-1 text-xs text-muted-foreground">{a.readingTime} min read</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
+            <HomeBlogList />
           </ul>
-        </div>
-      </Reveal>
-
-      {/* KITCHEN TIP */}
-      <Reveal as="section" className="mt-24 bg-vanilla py-16">
-        <div className={`${shell} max-w-4xl`}>
-          <p className="eyebrow">Tip from the kitchen</p>
-          <blockquote className="mt-6 font-serif text-2xl italic leading-relaxed sm:text-3xl">
-            &ldquo;{brand.kitchenTip}&rdquo;
-          </blockquote>
-        </div>
-      </Reveal>
-
-      {/* THE COOK */}
-      <Reveal as="section" className={`${shell} mt-24`}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="display-lg max-w-lg">The cook behind the recipes.</h2>
-          <Link
-            to="/creators"
-            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary"
-          >
-            Read her story
-            <ArrowRight
-              className="size-4 transition-transform duration-200 group-hover:translate-x-1"
-              strokeWidth={1.8}
-            />
-          </Link>
-        </div>
-        <div className="mt-10 grid gap-8 lg:grid-cols-[22rem_1fr] lg:items-center">
-          {creators.map((c) => (
-            <CreatorCard key={c.handle} creator={c} />
-          ))}
-          <p className="font-serif text-xl leading-relaxed text-muted-foreground sm:text-2xl">
-            Every dish on Spice N Flavors is cooked, tested and written by {creators[0]?.name} — no
-            guest posts, no borrowed recipes. If a ratio is here, it was measured in her kitchen
-            first.
-          </p>
-        </div>
-      </Reveal>
-
-      {/* COLLECTIONS */}
-      <Reveal as="section" className={`${shell} mt-24`}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Collections</p>
-            <h2 className="display-lg mt-3">Save the mood.</h2>
-          </div>
-          <Link
-            to="/collections"
-            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary"
-          >
-            All collections
-            <ArrowRight
-              className="size-4 transition-transform duration-200 group-hover:translate-x-1"
-              strokeWidth={1.8}
-            />
-          </Link>
-        </div>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {collections.slice(0, 4).map((c, i) => (
-            <CollectionCard
-              key={c.slug}
-              collection={c}
-              tall={i % 3 === 1}
-              className={i % 3 === 1 ? "sm:mt-8" : ""}
-            />
-          ))}
         </div>
       </Reveal>
 
@@ -598,11 +413,6 @@ function Home() {
           </div>
         </div>
       </Reveal>
-
-      {/* AI ASSISTANT */}
-      <Reveal as="section" className={`${shell} mt-24`}>
-        <AIRecipeAssistant />
-      </Reveal>
     </>
   );
 }
@@ -616,5 +426,64 @@ function Fact({ label, value }: { label: string; value: string }) {
       </dt>
       <dd className="mt-1 font-serif text-lg">{value}</dd>
     </div>
+  );
+}
+
+function HomeBlogList() {
+  const { fresh } = Route.useLoaderData();
+  const curated = articles.filter((a) => a.slug !== featuredArticle.slug);
+  const items: {
+    slug: string;
+    image: string | null;
+    category: string;
+    title: string;
+    meta: string;
+  }[] = [
+    ...fresh.slice(0, 4).map((p: DbPostPublic) => ({
+      slug: p.slug,
+      image: p.coverUrl,
+      category: p.category,
+      title: p.title,
+      meta: `${formatLegacyDate(p.date)} · ${p.readingTime} min read`,
+    })),
+    ...curated.slice(0, Math.max(0, 4 - Math.min(fresh.length, 4))).map((a) => ({
+      slug: a.slug,
+      image: a.image,
+      category: a.category,
+      title: a.title,
+      meta: `${a.readingTime} min read`,
+    })),
+  ];
+
+  return (
+    <>
+      {items.map((a) => (
+        <li key={a.slug} className="rule-hair pt-6 first:border-t-0 first:pt-0">
+          <Link to="/blog/$slug" params={{ slug: a.slug }} className="group flex gap-4">
+            <div className="zoom-media size-24 shrink-0 overflow-hidden rounded-xl border border-border">
+              {a.image ? (
+                <img
+                  src={a.image}
+                  alt={a.title}
+                  loading="lazy"
+                  className="size-full object-cover"
+                />
+              ) : (
+                <span className="grid size-full place-items-center bg-secondary font-serif text-xl text-muted-foreground">
+                  {a.title.slice(0, 1)}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="eyebrow">{a.category}</p>
+              <h3 className="mt-1.5 font-serif text-lg leading-snug group-hover:text-primary">
+                {a.title}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">{a.meta}</p>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </>
   );
 }

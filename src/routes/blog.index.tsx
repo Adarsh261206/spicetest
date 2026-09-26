@@ -3,10 +3,13 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { articles, creatorByHandle, featuredArticle } from "@/lib/data";
 import { formatLegacyDate, legacyCover, legacyPosts, legacyYears } from "@/lib/legacy";
+import { listPublishedPostsFn } from "@/lib/posts.api";
+import type { DbPostPublic } from "@/lib/blocks";
 import { Reveal } from "@/components/site/Reveal";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/blog/")({
+  loader: async () => ({ fresh: await listPublishedPostsFn() }),
   head: () => ({
     meta: [
       { title: "The Blog — cooking guides and kitchen notes | Spice N Flavors" },
@@ -31,7 +34,9 @@ const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
 const PAGE_SIZE = 12;
 
 function BlogPage() {
-  const rest = articles.filter((a) => a.slug !== featuredArticle.slug);
+  const { fresh } = Route.useLoaderData();
+  // Fresh admin posts first; the hand-written guides fill in until there are some.
+  const rest = fresh.length > 0 ? [] : articles.filter((a) => a.slug !== featuredArticle.slug);
 
   return (
     <div className={`${shell} pb-8 pt-8`}>
@@ -69,6 +74,16 @@ function BlogPage() {
         </Link>
       </Reveal>
 
+      {fresh.length > 0 && (
+        <section aria-label="Latest posts" className="mt-14">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {fresh.map((p: DbPostPublic, i: number) => (
+              <FreshCard key={p.slug} post={p} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {rest.map((a, i) => (
           <Reveal key={a.slug} delay={i * 60}>
@@ -94,6 +109,39 @@ function BlogPage() {
 
       <ArchiveSection />
     </div>
+  );
+}
+
+function FreshCard({ post: p, index }: { post: DbPostPublic; index: number }) {
+  return (
+    <Reveal delay={index * 60}>
+      <Link to="/blog/$slug" params={{ slug: p.slug }} className="lift group block">
+        <div className="zoom-media overflow-hidden rounded-2xl border border-border">
+          {p.coverUrl ? (
+            <img
+              src={p.coverUrl}
+              alt={p.title}
+              loading="lazy"
+              className="aspect-4/3 w-full object-cover"
+            />
+          ) : (
+            <span className="grid aspect-4/3 w-full place-items-center bg-secondary font-serif text-2xl text-muted-foreground">
+              {p.title.slice(0, 1)}
+            </span>
+          )}
+        </div>
+        <p className="eyebrow mt-4">{p.category}</p>
+        <h3 className="mt-2 font-serif text-xl leading-snug group-hover:text-primary">{p.title}</h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+          {p.excerpt}
+        </p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {formatLegacyDate(p.date)}
+          {formatLegacyDate(p.date) ? " · " : ""}
+          {p.readingTime} min read
+        </p>
+      </Link>
+    </Reveal>
   );
 }
 

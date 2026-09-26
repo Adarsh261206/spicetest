@@ -50,7 +50,7 @@ export const brand = {
     primaryCta: "Explore Recipes",
     secondaryCta: "Enter the Blog",
   },
-  milestone: { value: "134", label: "recipes & stories" },
+  milestone: { value: "150+", label: "recipes & stories" },
   kitchenTip:
     "Wait for the oil to separate at the edge of the pan. Until that happens, a tomato base is not finished — whatever the timer says.",
 };

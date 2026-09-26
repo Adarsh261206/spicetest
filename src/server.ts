@@ -45,12 +45,38 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+async function serveCover(id: string): Promise<Response> {
+  try {
+    const { getDb } = await import("./lib/db.server");
+    const { eq } = await import("drizzle-orm");
+    const { posts } = await import("./lib/schema");
+    const { drizzle } = await getDb();
+    const rows = await drizzle.select().from(posts).where(eq(posts.id, id)).limit(1);
+    const post = rows[0] as { coverData: string | null; coverMime: string | null } | undefined;
+    if (!post?.coverData) return new Response("Not found", { status: 404 });
+    return new Response(Buffer.from(post.coverData, "base64"), {
+      status: 200,
+      headers: {
+        "content-type": post.coverMime || "image/jpeg",
+        "cache-control": "public, max-age=31536000, immutable",
+      },
+    });
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      // Blog cover images uploaded via /admin (stored in the database).
+      const coverMatch = url.pathname.match(/^\/api\/covers\/([A-Za-z0-9-]+)$/);
+      if (coverMatch) {
+        return serveCover(coverMatch[1]!);
+      }
       // Old Blogger URLs (/YYYY/MM/slug.html) -> new blog pages. Keeps
       // spicenflavors.com SEO + bookmarks working after the move.
-      const url = new URL(request.url);
       const slug = (legacyRedirects as Record<string, string>)[url.pathname];
       if (slug) {
         return Response.redirect(new URL(`/blog/${slug}`, url).toString(), 301);

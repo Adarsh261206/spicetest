@@ -2,14 +2,19 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { articleBySlug, articles, creatorByHandle } from "@/lib/data";
 import { formatLegacyDate, legacyBody, legacyBySlug, legacyCover, legacyPosts } from "@/lib/legacy";
+import { getPublishedPostFn } from "@/lib/posts.api";
+import type { DbPostPublic } from "@/lib/blocks";
+import { PostBody } from "@/components/site/PostBody";
 import { Reveal } from "@/components/site/Reveal";
 
 export const Route = createFileRoute("/blog/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const article = articleBySlug(params.slug);
     if (article) return { kind: "article" as const, article };
     const legacy = legacyBySlug(params.slug);
     if (legacy) return { kind: "legacy" as const, legacy };
+    const fresh = await getPublishedPostFn({ data: { slug: params.slug } });
+    if (fresh) return { kind: "fresh" as const, fresh };
     throw notFound();
   },
   head: ({ loaderData }) => {
@@ -30,6 +35,20 @@ export const Route = createFileRoute("/blog/$slug")({
           { name: "description", content: legacy.excerpt },
           { property: "og:title", content: title },
           { property: "og:description", content: legacy.excerpt },
+          { property: "og:type", content: "article" },
+          { name: "twitter:card", content: "summary_large_image" },
+        ],
+      };
+    }
+    if (loaderData.kind === "fresh") {
+      const { fresh } = loaderData;
+      const title = `${fresh.title} | Spice N Flavors`;
+      return {
+        meta: [
+          { title },
+          { name: "description", content: fresh.excerpt },
+          { property: "og:title", content: title },
+          { property: "og:description", content: fresh.excerpt },
           { property: "og:type", content: "article" },
           { name: "twitter:card", content: "summary_large_image" },
         ],
@@ -56,6 +75,7 @@ const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
 function ArticlePage() {
   const data = Route.useLoaderData();
   if (data.kind === "legacy") return <LegacyArticlePage slug={data.legacy.slug} />;
+  if (data.kind === "fresh") return <FreshArticlePage post={data.fresh} />;
 
   const { article } = data;
   const author = creatorByHandle(article.author);
@@ -202,6 +222,48 @@ function LegacyArticlePage({ slug }: { slug: string }) {
           ))}
         </div>
       </Reveal>
+    </article>
+  );
+}
+
+function FreshArticlePage({ post }: { post: DbPostPublic }) {
+  return (
+    <article className="pb-10">
+      <header className={`${shell} pt-8`}>
+        <div className="max-w-3xl">
+          <p className="eyebrow">{post.category}</p>
+          <h1 className="display-lg mt-4">{post.title}</h1>
+          {post.excerpt && (
+            <p className="mt-5 text-lg leading-relaxed text-muted-foreground">{post.excerpt}</p>
+          )}
+          <p className="mt-6 text-sm text-muted-foreground">
+            {post.author}
+            {formatLegacyDate(post.date) ? ` · ${formatLegacyDate(post.date)}` : ""} ·{" "}
+            {post.readingTime} min read
+          </p>
+          {post.tags.length > 0 && (
+            <ul className="mt-5 flex flex-wrap gap-2" aria-label="Tags">
+              {post.tags.map((t) => (
+                <li
+                  key={t}
+                  className="rounded-full bg-secondary px-3 py-1.5 text-xs text-muted-foreground"
+                >
+                  {t}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {post.coverUrl && (
+          <div className="zoom-media mt-10 overflow-hidden rounded-[2rem] border border-border">
+            <img src={post.coverUrl} alt={post.title} className="aspect-16/9 w-full object-cover" />
+          </div>
+        )}
+      </header>
+
+      <div className={`${shell} legacy-post mt-14 max-w-3xl`}>
+        <PostBody blocks={post.body} />
+      </div>
     </article>
   );
 }

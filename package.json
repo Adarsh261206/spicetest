@@ -15,6 +15,7 @@
     "rolldown": "1.2.1"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -52,9 +53,11 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "drizzle-orm": "^0.45.3",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
+    "pg": "^8.23.0",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
@@ -72,6 +75,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@types/node": "^22.16.5",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",

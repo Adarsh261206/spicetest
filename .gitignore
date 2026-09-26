@@ -1,6 +1,10 @@
 # Blogger Takeout source (960MB+, never commit — import output lives in public/blog)
 Takeout/
 
+# Local env + embedded dev database
+.env
+.data/
+
 # Logs
 logs
 *.log

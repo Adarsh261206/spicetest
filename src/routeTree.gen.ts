@@ -15,12 +15,16 @@ import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CuisinesRouteImport } from './routes/cuisines'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ShareRouteImport } from './routes/share'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as CreatorsIndexRouteImport } from './routes/creators.index'
 import { Route as CreatorsHandleRouteImport } from './routes/creators.$handle'
 import { Route as RecipesIndexRouteImport } from './routes/recipes.index'
 import { Route as RecipesSlugRouteImport } from './routes/recipes.$slug'
+import { Route as AdminPostsPostIdRouteImport } from './routes/admin.posts.$postId'
+import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -50,6 +54,16 @@ const DashboardRoute = DashboardRouteImport.update({
 const ShareRoute = ShareRouteImport.update({
   id: '/share',
   path: '/share',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
@@ -82,6 +96,16 @@ const RecipesSlugRoute = RecipesSlugRouteImport.update({
   path: '/recipes/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPostsPostIdRoute = AdminPostsPostIdRouteImport.update({
+  id: '/admin/posts/$postId',
+  path: '/admin/posts/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
+  id: '/admin/posts/new',
+  path: '/admin/posts/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -90,12 +114,16 @@ export interface FileRoutesByFullPath {
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
   '/share': typeof ShareRoute
+  '/admin/login': typeof AdminLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
   '/recipes/$slug': typeof RecipesSlugRoute
+  '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/creators/': typeof CreatorsIndexRoute
   '/recipes/': typeof RecipesIndexRoute
+  '/admin/posts/$postId': typeof AdminPostsPostIdRoute
+  '/admin/posts/new': typeof AdminPostsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -104,12 +132,16 @@ export interface FileRoutesByTo {
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
   '/share': typeof ShareRoute
+  '/admin/login': typeof AdminLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
   '/recipes/$slug': typeof RecipesSlugRoute
+  '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
   '/creators': typeof CreatorsIndexRoute
   '/recipes': typeof RecipesIndexRoute
+  '/admin/posts/$postId': typeof AdminPostsPostIdRoute
+  '/admin/posts/new': typeof AdminPostsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -119,12 +151,16 @@ export interface FileRoutesById {
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
   '/share': typeof ShareRoute
+  '/admin/login': typeof AdminLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
   '/recipes/$slug': typeof RecipesSlugRoute
+  '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/creators/': typeof CreatorsIndexRoute
   '/recipes/': typeof RecipesIndexRoute
+  '/admin/posts/$postId': typeof AdminPostsPostIdRoute
+  '/admin/posts/new': typeof AdminPostsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -135,12 +171,16 @@ export interface FileRouteTypes {
     | '/cuisines'
     | '/dashboard'
     | '/share'
+    | '/admin/login'
     | '/blog/$slug'
     | '/creators/$handle'
     | '/recipes/$slug'
+    | '/admin/'
     | '/blog/'
     | '/creators/'
     | '/recipes/'
+    | '/admin/posts/$postId'
+    | '/admin/posts/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -149,12 +189,16 @@ export interface FileRouteTypes {
     | '/cuisines'
     | '/dashboard'
     | '/share'
+    | '/admin/login'
     | '/blog/$slug'
     | '/creators/$handle'
     | '/recipes/$slug'
+    | '/admin'
     | '/blog'
     | '/creators'
     | '/recipes'
+    | '/admin/posts/$postId'
+    | '/admin/posts/new'
   id:
     | '__root__'
     | '/'
@@ -163,12 +207,16 @@ export interface FileRouteTypes {
     | '/cuisines'
     | '/dashboard'
     | '/share'
+    | '/admin/login'
     | '/blog/$slug'
     | '/creators/$handle'
     | '/recipes/$slug'
+    | '/admin/'
     | '/blog/'
     | '/creators/'
     | '/recipes/'
+    | '/admin/posts/$postId'
+    | '/admin/posts/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -178,12 +226,16 @@ export interface RootRouteChildren {
   CuisinesRoute: typeof CuisinesRoute
   DashboardRoute: typeof DashboardRoute
   ShareRoute: typeof ShareRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   BlogSlugRoute: typeof BlogSlugRoute
   CreatorsHandleRoute: typeof CreatorsHandleRoute
   RecipesSlugRoute: typeof RecipesSlugRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
   CreatorsIndexRoute: typeof CreatorsIndexRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
+  AdminPostsPostIdRoute: typeof AdminPostsPostIdRoute
+  AdminPostsNewRoute: typeof AdminPostsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -230,6 +282,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -272,6 +338,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecipesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/posts/$postId': {
+      id: '/admin/posts/$postId'
+      path: '/admin/posts/$postId'
+      fullPath: '/admin/posts/$postId'
+      preLoaderRoute: typeof AdminPostsPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/posts/new': {
+      id: '/admin/posts/new'
+      path: '/admin/posts/new'
+      fullPath: '/admin/posts/new'
+      preLoaderRoute: typeof AdminPostsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -282,12 +362,16 @@ const rootRouteChildren: RootRouteChildren = {
   CuisinesRoute: CuisinesRoute,
   DashboardRoute: DashboardRoute,
   ShareRoute: ShareRoute,
+  AdminLoginRoute: AdminLoginRoute,
   BlogSlugRoute: BlogSlugRoute,
   CreatorsHandleRoute: CreatorsHandleRoute,
   RecipesSlugRoute: RecipesSlugRoute,
+  AdminIndexRoute: AdminIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
   CreatorsIndexRoute: CreatorsIndexRoute,
   RecipesIndexRoute: RecipesIndexRoute,
+  AdminPostsPostIdRoute: AdminPostsPostIdRoute,
+  AdminPostsNewRoute: AdminPostsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
