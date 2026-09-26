@@ -1,0 +1,55 @@
+{
+ "at": "2026-09-26T18:51:39.204Z",
+ "feedEntries": 623,
+ "imported": 146,
+ "live": 134,
+ "drafts": 12,
+ "skipped": [
+  {
+   "title": "Corn vadas for rainy treats",
+   "status": "DRAFT",
+   "reason": "too short (17 chars)",
+   "id": "tag:blogger.com,1999:blog-520709922871394676.post-1074023941161531992"
+  },
+  {
+   "title": "Pistachio and rose flavor cake delight",
+   "status": "DRAFT",
+   "reason": "too short (0 chars)",
+   "id": "tag:blogger.com,1999:blog-520709922871394676.post-3058004588217507362"
+  },
+  {
+   "title": "Chocolate brown sugar Christmas cookies",
+   "status": "DRAFT",
+   "reason": "too short (0 chars)",
+   "id": "tag:blogger.com,1999:blog-520709922871394676.post-7115522949566032046"
+  },
+  {
+   "title": "Untitled recipe",
+   "status": "DRAFT",
+   "reason": "too short (0 chars)",
+   "id": "tag:blogger.com,1999:blog-520709922871394676.post-8156812675951540998"
+  }
+ ],
+ "uniqueImages": 605,
+ "localizedImages": 575,
+ "remoteKept": 0,
+ "failedDownloads": [],
+ "remainingRemoteRefs": [],
+ "noImagePosts": [
+  "green-chutney",
+  "chicken-shawarma",
+  "bombay-dabeli-pav",
+  "bombay-pav-bhaji",
+  "bombay-masala-omelette",
+  "bombay-frankee",
+  "some-starters-some-desserts-traditional",
+  "journey-of-spices",
+  "masaledar-chicken-with-step-by-step",
+  "minnestrone-soup",
+  "paneer-makhani",
+  "may-is-family-recipes-challenge",
+  "weekend-with-friends",
+  "welcome-to-spice-n-flavors-blog"
+ ],
+ "jsonBytes": 786488
+}

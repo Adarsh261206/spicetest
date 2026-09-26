@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { articles, creatorByHandle, featuredArticle } from "@/lib/data";
+import { formatLegacyDate, legacyCover, legacyPosts, legacyYears } from "@/lib/legacy";
 import { Reveal } from "@/components/site/Reveal";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/journal/")({
   head: () => ({
@@ -24,6 +28,7 @@ export const Route = createFileRoute("/journal/")({
 });
 
 const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
+const PAGE_SIZE = 12;
 
 function JournalPage() {
   const rest = articles.filter((a) => a.slug !== featuredArticle.slug);
@@ -86,6 +91,193 @@ function JournalPage() {
           </Reveal>
         ))}
       </div>
+
+      <ArchiveSection />
     </div>
+  );
+}
+
+function ArchiveSection() {
+  const [query, setQuery] = useState("");
+  const [year, setYear] = useState("All");
+  const [page, setPage] = useState(0);
+
+  const term = query.trim().toLowerCase();
+
+  const filtered = useMemo(() => {
+    return legacyPosts.filter((p) => {
+      if (year !== "All") {
+        const y = p.date ? p.date.slice(0, 4) : "Unknown";
+        if (y !== year) return false;
+      }
+      if (!term) return true;
+      const hay = [p.title, p.category, p.excerpt, ...p.tags].join(" ").toLowerCase();
+      return term.split(/\s+/).every((w) => hay.includes(w));
+    });
+  }, [term, year]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pages - 1);
+  const visible = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  return (
+    <section aria-label="From the archive" className="mt-20">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Archive</p>
+          <h2 className="display-lg mt-3">From the old blog.</h2>
+          <p className="mt-3 max-w-xl text-muted-foreground">
+            Every recipe from spicenflavors.com, preserved as it was — {legacyPosts.length} posts
+            from 2012 onwards.
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {filtered.length} {filtered.length === 1 ? "post" : "posts"}
+        </p>
+      </div>
+
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div
+          role="search"
+          className="flex flex-1 items-center gap-3 rounded-full border border-border bg-secondary/40 py-2 pl-5 pr-4 transition-colors focus-within:border-primary"
+        >
+          <Search className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.6} />
+          <label htmlFor="archive-search" className="sr-only">
+            Search the archive
+          </label>
+          <input
+            id="archive-search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Search 140+ old recipes… try “biryani” or “cake”"
+            className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-hidden placeholder:text-muted-foreground/80"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          Year
+          <select
+            value={year}
+            onChange={(e) => {
+              setYear(e.target.value);
+              setPage(0);
+            }}
+            className="rounded-full border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-hidden focus:border-primary"
+          >
+            <option value="All">All years</option>
+            {legacyYears.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="py-16 text-center text-muted-foreground">
+          Nothing matched. Try a different search or year.
+        </p>
+      ) : (
+        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((p) => (
+            <Link
+              key={p.slug}
+              to="/journal/$slug"
+              params={{ slug: p.slug }}
+              className="lift group block"
+            >
+              <div className="zoom-media relative overflow-hidden rounded-2xl border border-border">
+                <img
+                  src={legacyCover(p)}
+                  alt={p.title}
+                  loading="lazy"
+                  className="aspect-4/3 w-full object-cover"
+                />
+                {p.draft && (
+                  <span className="absolute left-3 top-3 rounded-full bg-vanilla px-3 py-1 text-xs font-semibold text-accent-foreground">
+                    Draft
+                  </span>
+                )}
+              </div>
+              <p className="eyebrow mt-4">{p.category}</p>
+              <h3 className="mt-2 font-serif text-xl leading-snug group-hover:text-primary">
+                {p.title}
+              </h3>
+              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                {p.excerpt}
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {formatLegacyDate(p.date)}
+                {formatLegacyDate(p.date) ? " · " : ""}
+                {p.readingTime} min read
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {pages > 1 && (
+        <nav aria-label="Archive pages" className="mt-12 flex items-center justify-center gap-2">
+          <button
+            type="button"
+            disabled={safePage === 0}
+            onClick={() => setPage(safePage - 1)}
+            className={cn(
+              "rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors",
+              safePage === 0
+                ? "cursor-not-allowed opacity-40"
+                : "hover:border-primary hover:bg-secondary",
+            )}
+          >
+            ← Newer
+          </button>
+          {Array.from({ length: pages }, (_, i) => i)
+            .filter((i) => i === 0 || i === pages - 1 || Math.abs(i - safePage) <= 1)
+            .reduce<(number | "…")[]>((acc, i, idx, arr) => {
+              if (idx > 0 && i - (arr[idx - 1] as number) > 1) acc.push("…");
+              acc.push(i);
+              return acc;
+            }, [])
+            .map((i, k) =>
+              i === "…" ? (
+                <span key={`gap-${k}`} className="px-1 text-sm text-muted-foreground">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={i}
+                  type="button"
+                  aria-current={i === safePage ? "page" : undefined}
+                  onClick={() => setPage(i)}
+                  className={cn(
+                    "size-9 rounded-full border text-sm transition-colors",
+                    i === safePage
+                      ? "border-primary bg-tea font-semibold text-accent-foreground"
+                      : "border-border hover:border-primary",
+                  )}
+                >
+                  {i + 1}
+                </button>
+              ),
+            )}
+          <button
+            type="button"
+            disabled={safePage === pages - 1}
+            onClick={() => setPage(safePage + 1)}
+            className={cn(
+              "rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors",
+              safePage === pages - 1
+                ? "cursor-not-allowed opacity-40"
+                : "hover:border-primary hover:bg-secondary",
+            )}
+          >
+            Older →
+          </button>
+        </nav>
+      )}
+    </section>
   );
 }

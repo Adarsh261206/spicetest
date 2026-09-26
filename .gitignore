@@ -1,3 +1,6 @@
+# Blogger Takeout source (960MB+, never commit — import output lives in public/blog)
+Takeout/
+
 # Logs
 logs
 *.log
