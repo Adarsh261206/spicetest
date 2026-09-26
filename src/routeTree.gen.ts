@@ -15,10 +15,10 @@ import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CuisinesRouteImport } from './routes/cuisines'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ShareRouteImport } from './routes/share'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as CreatorsIndexRouteImport } from './routes/creators.index'
 import { Route as CreatorsHandleRouteImport } from './routes/creators.$handle'
-import { Route as JournalIndexRouteImport } from './routes/journal.index'
-import { Route as JournalSlugRouteImport } from './routes/journal.$slug'
 import { Route as RecipesIndexRouteImport } from './routes/recipes.index'
 import { Route as RecipesSlugRouteImport } from './routes/recipes.$slug'
 
@@ -52,6 +52,16 @@ const ShareRoute = ShareRouteImport.update({
   path: '/share',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CreatorsIndexRoute = CreatorsIndexRouteImport.update({
   id: '/creators/',
   path: '/creators/',
@@ -60,16 +70,6 @@ const CreatorsIndexRoute = CreatorsIndexRouteImport.update({
 const CreatorsHandleRoute = CreatorsHandleRouteImport.update({
   id: '/creators/$handle',
   path: '/creators/$handle',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JournalIndexRoute = JournalIndexRouteImport.update({
-  id: '/journal/',
-  path: '/journal/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JournalSlugRoute = JournalSlugRouteImport.update({
-  id: '/journal/$slug',
-  path: '/journal/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecipesIndexRoute = RecipesIndexRouteImport.update({
@@ -90,11 +90,11 @@ export interface FileRoutesByFullPath {
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
   '/share': typeof ShareRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
-  '/journal/$slug': typeof JournalSlugRoute
   '/recipes/$slug': typeof RecipesSlugRoute
+  '/blog/': typeof BlogIndexRoute
   '/creators/': typeof CreatorsIndexRoute
-  '/journal/': typeof JournalIndexRoute
   '/recipes/': typeof RecipesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -104,11 +104,11 @@ export interface FileRoutesByTo {
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
   '/share': typeof ShareRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
-  '/journal/$slug': typeof JournalSlugRoute
   '/recipes/$slug': typeof RecipesSlugRoute
+  '/blog': typeof BlogIndexRoute
   '/creators': typeof CreatorsIndexRoute
-  '/journal': typeof JournalIndexRoute
   '/recipes': typeof RecipesIndexRoute
 }
 export interface FileRoutesById {
@@ -119,11 +119,11 @@ export interface FileRoutesById {
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
   '/share': typeof ShareRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
-  '/journal/$slug': typeof JournalSlugRoute
   '/recipes/$slug': typeof RecipesSlugRoute
+  '/blog/': typeof BlogIndexRoute
   '/creators/': typeof CreatorsIndexRoute
-  '/journal/': typeof JournalIndexRoute
   '/recipes/': typeof RecipesIndexRoute
 }
 export interface FileRouteTypes {
@@ -135,11 +135,11 @@ export interface FileRouteTypes {
     | '/cuisines'
     | '/dashboard'
     | '/share'
+    | '/blog/$slug'
     | '/creators/$handle'
-    | '/journal/$slug'
     | '/recipes/$slug'
+    | '/blog/'
     | '/creators/'
-    | '/journal/'
     | '/recipes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,11 +149,11 @@ export interface FileRouteTypes {
     | '/cuisines'
     | '/dashboard'
     | '/share'
+    | '/blog/$slug'
     | '/creators/$handle'
-    | '/journal/$slug'
     | '/recipes/$slug'
+    | '/blog'
     | '/creators'
-    | '/journal'
     | '/recipes'
   id:
     | '__root__'
@@ -163,11 +163,11 @@ export interface FileRouteTypes {
     | '/cuisines'
     | '/dashboard'
     | '/share'
+    | '/blog/$slug'
     | '/creators/$handle'
-    | '/journal/$slug'
     | '/recipes/$slug'
+    | '/blog/'
     | '/creators/'
-    | '/journal/'
     | '/recipes/'
   fileRoutesById: FileRoutesById
 }
@@ -178,11 +178,11 @@ export interface RootRouteChildren {
   CuisinesRoute: typeof CuisinesRoute
   DashboardRoute: typeof DashboardRoute
   ShareRoute: typeof ShareRoute
+  BlogSlugRoute: typeof BlogSlugRoute
   CreatorsHandleRoute: typeof CreatorsHandleRoute
-  JournalSlugRoute: typeof JournalSlugRoute
   RecipesSlugRoute: typeof RecipesSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   CreatorsIndexRoute: typeof CreatorsIndexRoute
-  JournalIndexRoute: typeof JournalIndexRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
 }
 
@@ -230,6 +230,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/creators/': {
       id: '/creators/'
       path: '/creators'
@@ -242,20 +256,6 @@ declare module '@tanstack/react-router' {
       path: '/creators/$handle'
       fullPath: '/creators/$handle'
       preLoaderRoute: typeof CreatorsHandleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/journal/': {
-      id: '/journal/'
-      path: '/journal'
-      fullPath: '/journal/'
-      preLoaderRoute: typeof JournalIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/journal/$slug': {
-      id: '/journal/$slug'
-      path: '/journal/$slug'
-      fullPath: '/journal/$slug'
-      preLoaderRoute: typeof JournalSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recipes/': {
@@ -282,11 +282,11 @@ const rootRouteChildren: RootRouteChildren = {
   CuisinesRoute: CuisinesRoute,
   DashboardRoute: DashboardRoute,
   ShareRoute: ShareRoute,
+  BlogSlugRoute: BlogSlugRoute,
   CreatorsHandleRoute: CreatorsHandleRoute,
-  JournalSlugRoute: JournalSlugRoute,
   RecipesSlugRoute: RecipesSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
   CreatorsIndexRoute: CreatorsIndexRoute,
-  JournalIndexRoute: JournalIndexRoute,
   RecipesIndexRoute: RecipesIndexRoute,
 }
 export const routeTree = rootRouteImport

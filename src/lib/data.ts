@@ -34,9 +34,9 @@ import spiceCumin from "@/assets/spice-cumin.jpg";
 import spiceChilli from "@/assets/spice-red-chilli.jpg";
 import spiceSaffron from "@/assets/spice-saffron.jpg";
 
-import journalSpiceBox from "@/assets/journal-spice-box.jpg";
-import journalDosaBatter from "@/assets/journal-dosa-batter.jpg";
-import journalTomatoes from "@/assets/journal-tomatoes.jpg";
+import blogSpiceBox from "@/assets/blog-spice-box.jpg";
+import blogDosaBatter from "@/assets/blog-dosa-batter.jpg";
+import blogTomatoes from "@/assets/blog-tomatoes.jpg";
 
 import creator3 from "@/assets/creator-3.jpg";
 
@@ -48,7 +48,7 @@ export const brand = {
     headline: "A world of flavor.",
     support: "Recipes, stories and traditions worth bringing to the table.",
     primaryCta: "Explore Recipes",
-    secondaryCta: "Enter the Journal",
+    secondaryCta: "Enter the Blog",
   },
   milestone: { value: "134", label: "recipes & stories" },
   kitchenTip:
@@ -58,9 +58,9 @@ export const brand = {
 export const images = {
   heroTikka,
   heroSpices,
-  journalSpiceBox,
-  journalDosaBatter,
-  journalTomatoes,
+  blogSpiceBox,
+  blogDosaBatter,
+  blogTomatoes,
   biryani,
   butterChicken,
   masalaDosa,
@@ -582,7 +582,7 @@ export const recipes: Recipe[] = [
     faqs: [
       {
         q: "My batter did not rise.",
-        a: "Almost always temperature. Below 22°C the wild yeast on the urad dal barely works — see the journal piece on dosa fermentation.",
+        a: "Almost always temperature. Below 22°C the wild yeast on the urad dal barely works — see the blog post on dosa fermentation.",
       },
       {
         q: "Why does my dosa stick?",
@@ -2322,7 +2322,7 @@ export const articles: Article[] = [
     excerpt:
       "Most spice racks are archaeology. A working masala dabba holds nine things and gets opened every day.",
     readingTime: 6,
-    image: journalSpiceBox,
+    image: blogSpiceBox,
     author: "viya-sheth",
     featured: true,
     body: [
@@ -2354,7 +2354,7 @@ export const articles: Article[] = [
     excerpt:
       "Nine times out of ten it is temperature, not technique. The other time it is the salt going in too early.",
     readingTime: 8,
-    image: journalDosaBatter,
+    image: blogDosaBatter,
     author: "viya-sheth",
     body: [
       {
@@ -2385,7 +2385,7 @@ export const articles: Article[] = [
     excerpt:
       "The single biggest improvement most home gravies can make costs nothing but ten more minutes.",
     readingTime: 5,
-    image: journalTomatoes,
+    image: blogTomatoes,
     author: "viya-sheth",
     body: [
       {
@@ -2439,7 +2439,7 @@ export const articles: Article[] = [
     excerpt:
       "One is a finishing blend of warm spices. The other is a colonial-era shortcut. They are not interchangeable.",
     readingTime: 5,
-    image: journalSpiceBox,
+    image: blogSpiceBox,
     author: "viya-sheth",
     body: [
       {
@@ -2527,7 +2527,7 @@ export const articles: Article[] = [
     excerpt:
       "Heat, light and air are what age a spice. The shelf above your hob fails all three tests.",
     readingTime: 4,
-    image: journalSpiceBox,
+    image: blogSpiceBox,
     author: "viya-sheth",
     body: [
       {

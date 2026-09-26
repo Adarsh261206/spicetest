@@ -6,16 +6,16 @@ import { formatLegacyDate, legacyCover, legacyPosts, legacyYears } from "@/lib/l
 import { Reveal } from "@/components/site/Reveal";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/journal/")({
+export const Route = createFileRoute("/blog/")({
   head: () => ({
     meta: [
-      { title: "The Journal — cooking guides and kitchen notes | Spice N Flavors" },
+      { title: "The Blog — cooking guides and kitchen notes | Spice N Flavors" },
       {
         name: "description",
         content:
           "Kitchen tips, cooking guides and ingredient stories: spice boxes, dosa fermentation, tempering, basmati rice and how to get real char on chicken.",
       },
-      { property: "og:title", content: "From the kitchen — the Spice N Flavors journal" },
+      { property: "og:title", content: "From the kitchen — the Spice N Flavors blog" },
       {
         property: "og:description",
         content: "Cooking guides, kitchen tips and ingredient stories written by people who cook.",
@@ -24,19 +24,19 @@ export const Route = createFileRoute("/journal/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: JournalPage,
+  component: BlogPage,
 });
 
 const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
 const PAGE_SIZE = 12;
 
-function JournalPage() {
+function BlogPage() {
   const rest = articles.filter((a) => a.slug !== featuredArticle.slug);
 
   return (
     <div className={`${shell} pb-8 pt-8`}>
       <header className="max-w-2xl">
-        <p className="eyebrow">Journal</p>
+        <p className="eyebrow">Blog</p>
         <h1 className="display-lg mt-3">From the kitchen.</h1>
         <p className="mt-5 text-muted-foreground">
           Technique, ingredients and the small decisions that separate a dish that works from one
@@ -46,7 +46,7 @@ function JournalPage() {
 
       <Reveal className="mt-12">
         <Link
-          to="/journal/$slug"
+          to="/blog/$slug"
           params={{ slug: featuredArticle.slug }}
           className="lift group grid overflow-hidden rounded-[2rem] border border-border lg:grid-cols-[1.1fr_0.9fr]"
         >
@@ -72,7 +72,7 @@ function JournalPage() {
       <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {rest.map((a, i) => (
           <Reveal key={a.slug} delay={i * 60}>
-            <Link to="/journal/$slug" params={{ slug: a.slug }} className="lift group block">
+            <Link to="/blog/$slug" params={{ slug: a.slug }} className="lift group block">
               <div className="zoom-media overflow-hidden rounded-2xl border border-border">
                 <img
                   src={a.image}
@@ -185,7 +185,7 @@ function ArchiveSection() {
           {visible.map((p) => (
             <Link
               key={p.slug}
-              to="/journal/$slug"
+              to="/blog/$slug"
               params={{ slug: p.slug }}
               className="lift group block"
             >

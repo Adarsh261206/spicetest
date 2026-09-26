@@ -4,7 +4,7 @@ import { articleBySlug, articles, creatorByHandle } from "@/lib/data";
 import { formatLegacyDate, legacyBody, legacyBySlug, legacyCover, legacyPosts } from "@/lib/legacy";
 import { Reveal } from "@/components/site/Reveal";
 
-export const Route = createFileRoute("/journal/$slug")({
+export const Route = createFileRoute("/blog/$slug")({
   loader: ({ params }) => {
     const article = articleBySlug(params.slug);
     if (article) return { kind: "article" as const, article };
@@ -96,7 +96,7 @@ function ArticlePage() {
           {more.map((a) => (
             <Link
               key={a.slug}
-              to="/journal/$slug"
+              to="/blog/$slug"
               params={{ slug: a.slug }}
               className="lift group block"
             >
@@ -182,7 +182,7 @@ function LegacyArticlePage({ slug }: { slug: string }) {
           {more.map((a) => (
             <Link
               key={a.slug}
-              to="/journal/$slug"
+              to="/blog/$slug"
               params={{ slug: a.slug }}
               className="lift group block"
             >

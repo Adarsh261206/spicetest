@@ -48,12 +48,19 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      // Old Blogger URLs (/YYYY/MM/slug.html) -> new journal pages. Keeps
+      // Old Blogger URLs (/YYYY/MM/slug.html) -> new blog pages. Keeps
       // spicenflavors.com SEO + bookmarks working after the move.
       const url = new URL(request.url);
       const slug = (legacyRedirects as Record<string, string>)[url.pathname];
       if (slug) {
-        return Response.redirect(new URL(`/journal/${slug}`, url).toString(), 301);
+        return Response.redirect(new URL(`/blog/${slug}`, url).toString(), 301);
+      }
+      // /journal/* was the blog path briefly -> keep it working.
+      if (url.pathname === "/journal" || url.pathname.startsWith("/journal/")) {
+        return Response.redirect(
+          new URL(url.pathname.replace(/^\/journal/, "/blog") + url.search, url).toString(),
+          301,
+        );
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

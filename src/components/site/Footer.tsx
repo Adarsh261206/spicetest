@@ -6,7 +6,7 @@ const groups = [
     links: [
       { label: "Recipes", to: "/recipes" as const },
       { label: "Cuisines", to: "/cuisines" as const },
-      { label: "Journal", to: "/journal" as const },
+      { label: "Blog", to: "/blog" as const },
       { label: "About", to: "/about" as const },
       { label: "Contact", to: "/about" as const },
     ],

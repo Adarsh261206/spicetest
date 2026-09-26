@@ -103,7 +103,7 @@ function Home() {
                 />
               </Link>
               <Link
-                to="/journal"
+                to="/blog"
                 className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-semibold transition-colors duration-200 hover:border-primary hover:bg-vanilla"
               >
                 {brand.hero.secondaryCta}
@@ -433,18 +433,18 @@ function Home() {
         </div>
       </Reveal>
 
-      {/* JOURNAL */}
+      {/* BLOG */}
       <Reveal as="section" className={`${shell} mt-24`}>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow">Journal</p>
+            <p className="eyebrow">Blog</p>
             <h2 className="display-lg mt-3">From the kitchen.</h2>
           </div>
           <Link
-            to="/journal"
+            to="/blog"
             className="group inline-flex items-center gap-2 text-sm font-semibold text-primary"
           >
-            Read the journal
+            Read the blog
             <ArrowRight
               className="size-4 transition-transform duration-200 group-hover:translate-x-1"
               strokeWidth={1.8}
@@ -454,7 +454,7 @@ function Home() {
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <Link
-            to="/journal/$slug"
+            to="/blog/$slug"
             params={{ slug: featuredArticle.slug }}
             className="lift group block overflow-hidden rounded-[2rem] border border-border"
           >
@@ -482,7 +482,7 @@ function Home() {
               .slice(0, 4)
               .map((a) => (
                 <li key={a.slug} className="rule-hair pt-6 first:border-t-0 first:pt-0">
-                  <Link to="/journal/$slug" params={{ slug: a.slug }} className="group flex gap-4">
+                  <Link to="/blog/$slug" params={{ slug: a.slug }} className="group flex gap-4">
                     <div className="zoom-media size-24 shrink-0 overflow-hidden rounded-xl border border-border">
                       <img
                         src={a.image}
