@@ -2439,7 +2439,7 @@ export const articles: Article[] = [
     excerpt:
       "One is a finishing blend of warm spices. The other is a colonial-era shortcut. They are not interchangeable.",
     readingTime: 5,
-    image: blogSpiceBox,
+    image: spiceCardamom,
     author: "viya-sheth",
     body: [
       {
@@ -2527,7 +2527,7 @@ export const articles: Article[] = [
     excerpt:
       "Heat, light and air are what age a spice. The shelf above your hob fails all three tests.",
     readingTime: 4,
-    image: blogSpiceBox,
+    image: spiceCinnamon,
     author: "viya-sheth",
     body: [
       {

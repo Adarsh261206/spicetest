@@ -250,6 +250,18 @@ async function fetchWithTimeout(url, ms) {
   }
 }
 
+function isImageBuffer(buf, contentType) {
+  const ct = (contentType || "").toLowerCase();
+  if (ct && !ct.startsWith("image/")) return false;
+  return (
+    (buf[0] === 0xff && buf[1] === 0xd8) || // jpeg
+    (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) || // png
+    (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) || // gif
+    (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46) || // webp (RIFF)
+    (buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) // heic (ftyp)
+  );
+}
+
 async function downloadOne(url, dest) {
   let lastErr;
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -258,6 +270,9 @@ async function downloadOne(url, dest) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = Buffer.from(await res.arrayBuffer());
       if (buf.length < 500) throw new Error(`suspiciously small (${buf.length}b)`);
+      if (!isImageBuffer(buf, res.headers.get("content-type"))) {
+        throw new Error(`not an image (content-type: ${res.headers.get("content-type")})`);
+      }
       mkdirSync(dirname(dest), { recursive: true });
       writeFileSync(dest + ".tmp", buf);
       // Rename to final name with correct extension if it differs.
