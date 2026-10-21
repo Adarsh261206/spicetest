@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { Check, Plus } from "lucide-react";
-import { recipesByCreator, type Contributor } from "@/lib/data";
+import { type Contributor } from "@/lib/data";
+import { legacyLive } from "@/lib/legacy";
+import { useSaved } from "@/lib/saved";
 import { cn } from "@/lib/utils";
 
 export function CreatorCard({ creator, className }: { creator: Contributor; className?: string }) {
-  const [following, setFollowing] = useState(false);
+  const { isFollowing, toggleFollow } = useSaved();
+  const following = isFollowing(creator.handle);
 
   return (
     <article
@@ -41,13 +43,13 @@ export function CreatorCard({ creator, className }: { creator: Contributor; clas
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {recipesByCreator(creator.handle).length} recipes · {creator.location}
+        {legacyLive.length} recipes · {creator.location}
       </p>
 
       <button
         type="button"
         aria-pressed={following}
-        onClick={() => setFollowing((f) => !f)}
+        onClick={() => toggleFollow(creator.handle)}
         className={cn(
           "inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-95",
           following

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { PostBody } from "@/components/site/PostBody";
 import { adminSavePostFn, adminUploadImageFn } from "@/lib/posts.api";
+import { suggestExcerpt, suggestMeta } from "@/lib/ai/enhance";
 import type { DbPostPublic, PostBlock } from "@/lib/blocks";
 import { cn } from "@/lib/utils";
 
@@ -104,22 +105,44 @@ export function PostEditor({ initial }: { initial?: EditorInitial }) {
     [rows],
   );
 
+  // Blueprint §6 (I4): sentence-aware excerpt + title-aware SEO polish.
+  const bodyText = () =>
+    rows
+      .map((r) => r.block)
+      .filter((b) => b.type === "paragraph" || b.type === "heading")
+      .map((b) => b.text)
+      .join(" ");
+
   const autoExcerpt = () => {
     const first = rows.map((r) => r.block).find((b) => b.type === "paragraph" && b.text.trim());
-    if (first && first.type === "paragraph") setExcerpt(first.text.trim().slice(0, 170));
+    if (first && first.type === "paragraph") setExcerpt(suggestExcerpt(first.text));
+  };
+
+  const seoPolish = () => {
+    const { description } = suggestMeta(title, bodyText(), { category });
+    setExcerpt(description);
   };
 
   const save = async (nextStatus: "draft" | "published") => {
     setError("");
     setBusy(true);
     try {
+      // Auto-fill an empty excerpt from the first paragraph — no extra step for the user.
+      let finalExcerpt = excerpt.trim();
+      if (!finalExcerpt) {
+        const first = rows.map((r) => r.block).find((b) => b.type === "paragraph" && b.text.trim());
+        if (first && first.type === "paragraph") {
+          finalExcerpt = suggestExcerpt(first.text);
+          setExcerpt(finalExcerpt);
+        }
+      }
       const form = new FormData();
       if (initial?.id) form.set("id", initial.id);
       form.set("title", title);
       form.set("slug", slug || slugify(title));
       form.set("category", category);
       form.set("tags", tags);
-      form.set("excerpt", excerpt);
+      form.set("excerpt", finalExcerpt);
       form.set("author", author);
       form.set("status", nextStatus);
       form.set(
@@ -135,8 +158,12 @@ export function PostEditor({ initial }: { initial?: EditorInitial }) {
         ),
       );
       if (coverFile) form.set("cover", coverFile);
-      await adminSavePostFn({ data: form });
-      await navigate({ to: "/admin" });
+      const { slug: savedSlug } = await adminSavePostFn({ data: form });
+      if (nextStatus === "published") {
+        await navigate({ to: "/blog/$slug", params: { slug: savedSlug } });
+      } else {
+        await navigate({ to: "/admin" });
+      }
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
       setError(ERROR_TEXT[code] ?? "Could not save. Try again.");
@@ -161,91 +188,116 @@ export function PostEditor({ initial }: { initial?: EditorInitial }) {
             />
           </Field>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="URL slug">
+            <Field label="URL slug" hint={<span>Auto from title</span>}>
               <input
                 value={slug}
                 onChange={(e) => {
                   setSlug(slugify(e.target.value));
                   setSlugTouched(true);
                 }}
-                placeholder="monsoon-masala-chai"
+                placeholder="auto-from-title"
                 className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
               />
             </Field>
-            <Field label="Category">
-              <input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
-              />
-            </Field>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Tags (comma separated)">
-              <input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="Chai, Monsoon, Drinks"
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
-              />
-            </Field>
-            <Field label="Author">
-              <input
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
-              />
-            </Field>
-          </div>
-          <Field
-            label="Excerpt"
-            hint={
-              <button type="button" onClick={autoExcerpt} className="underline underline-offset-2">
-                Auto from first paragraph
-              </button>
-            }
-          >
-            <textarea
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              rows={2}
-              maxLength={300}
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
-            />
-          </Field>
-          <Field label="Cover photo">
-            <div className="flex flex-wrap items-center gap-4">
-              {coverPreview && (
-                <img
-                  src={coverPreview}
-                  alt="Cover preview"
-                  className="aspect-4/3 w-40 rounded-xl border border-border object-cover"
-                />
-              )}
-              <div>
-                <input
-                  ref={coverInput}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    setCoverFile(f);
-                    setCoverPreview(URL.createObjectURL(f));
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => coverInput.current?.click()}
-                  className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold transition-colors hover:border-primary"
-                >
-                  {coverPreview ? "Change cover" : "Upload cover"}
-                </button>
-                <p className="mt-2 text-xs text-muted-foreground">JPG/PNG/WebP, under 4 MB.</p>
+            <Field label="Cover photo">
+              <div className="flex flex-wrap items-center gap-4">
+                {coverPreview && (
+                  <img
+                    src={coverPreview}
+                    alt="Cover preview"
+                    className="aspect-4/3 w-40 rounded-xl border border-border object-cover"
+                  />
+                )}
+                <div>
+                  <input
+                    ref={coverInput}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      setCoverFile(f);
+                      setCoverPreview((prev) => {
+                        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                        return URL.createObjectURL(f);
+                      });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => coverInput.current?.click()}
+                    className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold transition-colors hover:border-primary"
+                  >
+                    {coverPreview ? "Change cover" : "Upload cover"}
+                  </button>
+                  <p className="mt-2 text-xs text-muted-foreground">JPG/PNG/WebP, under 4 MB.</p>
+                </div>
               </div>
+            </Field>
+          </div>
+          <details className="rounded-xl border border-border bg-background px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground">
+              Optional details (category, tags, author, excerpt)
+            </summary>
+            <div className="mt-4 space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Category">
+                  <input
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
+                  />
+                </Field>
+                <Field label="Author">
+                  <input
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
+                  />
+                </Field>
+              </div>
+              <Field label="Tags (comma separated)">
+                <input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="Chai, Monsoon, Drinks"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
+                />
+              </Field>
+              <Field
+                label="Excerpt"
+                hint={
+                  <span className="inline-flex gap-3">
+                    <button
+                      type="button"
+                      onClick={autoExcerpt}
+                      className="underline underline-offset-2"
+                    >
+                      Auto from first paragraph
+                    </button>
+                    <button
+                      type="button"
+                      onClick={seoPolish}
+                      className="underline underline-offset-2"
+                      title="Title-aware, length-safe description"
+                    >
+                      SEO polish
+                    </button>
+                  </span>
+                }
+              >
+                <textarea
+                  value={excerpt}
+                  onChange={(e) => setExcerpt(e.target.value)}
+                  rows={2}
+                  maxLength={300}
+                  placeholder="Leave empty to auto-fill from the first paragraph."
+                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-hidden focus:border-primary"
+                />
+              </Field>
             </div>
-          </Field>
+          </details>
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
@@ -349,27 +401,35 @@ export function PostEditor({ initial }: { initial?: EditorInitial }) {
                   : "bg-vanilla text-accent-foreground",
               )}
             >
-              {status === "published" ? "Published" : "Draft"}
+              {status === "published" ? "Will publish" : "Will save as draft"}
             </span>
-            <button
-              type="button"
-              onClick={() => setStatus(status === "published" ? "draft" : "published")}
-              className="underline underline-offset-2"
-            >
-              Switch to {status === "published" ? "draft" : "published"}
-            </button>
           </div>
           {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           <button
             type="button"
             disabled={busy}
-            onClick={() => void save(status)}
+            onClick={() => {
+              setStatus("published");
+              void save("published");
+            }}
             className="w-full rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-deep disabled:opacity-50"
           >
-            {busy ? "Saving…" : initial?.id ? "Save changes" : "Create post"}
+            {busy ? "Publishing…" : "Publish now"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setStatus("draft");
+              void save("draft");
+            }}
+            className="w-full rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold transition-colors hover:border-primary disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Save draft"}
           </button>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Published posts appear on the blog instantly — no redeploy needed.
+            As soon as you press Publish, the post goes live on the blog — no redeploy, the post
+            opens right away.
           </p>
         </div>
       </aside>

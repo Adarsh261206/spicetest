@@ -39,6 +39,9 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-vanilla: var(--vanilla);
   --color-tea: var(--tea);
+  --color-ember: var(--ember);
+  --color-saffron: var(--saffron);
+  --color-ink: var(--ink);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -56,6 +59,7 @@
 
   --shadow-soft: 0 1px 2px oklch(0.2343 0.0104 132.7 / 0.04);
   --shadow-lift: 0 12px 28px -18px oklch(0.2343 0.0104 132.7 / 0.28);
+  --shadow-float: 0 28px 70px -34px oklch(0.2343 0.0104 132.7 / 0.45);
 }
 
 :root {
@@ -83,6 +87,9 @@
   --accent-foreground: oklch(0.4 0.055 152);
   --tea: oklch(0.8868 0.0474 149);
   --vanilla: oklch(0.9568 0.0702 97.89);
+  --ember: oklch(0.635 0.128 42); /* terracotta — warm CTA accent */
+  --saffron: oklch(0.795 0.125 78); /* saffron — highlights */
+  --ink: oklch(0.228 0.014 62); /* deep espresso band (matches recipe hero) */
 
   --destructive: oklch(0.577 0.145 27.325);
   --destructive-foreground: oklch(0.9776 0.0184 110.05);
@@ -224,6 +231,128 @@
   }
 }
 
+/* ---------- Premium editorial layer ---------- */
+
+/* Warm paper grain over the whole page — print-magazine feel, barely there. */
+@utility page-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* Endless ticker: duplicate the track twice and slide by half. */
+@keyframes marquee-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-x 42s linear infinite;
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+/* Slow-rotating seal badge (hero sticker). */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility spin-slow {
+  animation: spin-slow 26s linear infinite;
+}
+
+/* Button sheen sweep on hover. */
+@utility btn-shine {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -70%;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.32), transparent);
+    transform: skewX(-18deg);
+    transition: left 620ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  &:hover::after {
+    left: 130%;
+  }
+}
+
+/* Decorative hairline divider with a centred diamond. */
+@utility ornament {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: var(--color-primary);
+  &::before,
+  &::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: var(--color-border);
+  }
+}
+
+/* Eyebrow on dark ink bands. */
+@utility eyebrow-light {
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: oklch(0.84 0.035 88);
+}
+
+/* Hand-marker underline for hero words. */
+@utility ink-mark {
+  background-image: linear-gradient(to top, var(--vanilla) 34%, transparent 34%);
+  background-repeat: no-repeat;
+  padding-inline: 0.08em;
+}
+
+/* Photo frame that lifts a touch more than .lift on big editorial images. */
+@utility photo-frame {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-3xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Layered warm wash behind the hero — tea, vanilla and a saffron glow. */
+@utility hero-wash {
+  background:
+    radial-gradient(
+      58% 48% at 84% 8%,
+      color-mix(in oklab, var(--tea) 75%, transparent) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      42% 42% at 6% 80%,
+      color-mix(in oklab, var(--vanilla) 85%, transparent) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      40% 34% at 52% 112%,
+      color-mix(in oklab, var(--saffron) 20%, transparent) 0%,
+      transparent 62%
+    );
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -345,6 +474,9 @@
   display: inline-block;
   max-width: 100%;
   height: auto;
+  max-height: 24rem;
+  width: auto;
+  margin-inline: auto;
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
 }
@@ -369,4 +501,33 @@
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.25rem;
+}
+
+/* Structured legacy steps (checklist/step rendering mirrors new recipes). */
+.legacy-post-step {
+  color: var(--color-foreground);
+  overflow-wrap: break-word;
+}
+.legacy-post-step b,
+.legacy-post-step strong {
+  color: var(--color-foreground);
+}
+.legacy-post-step a {
+  color: var(--color-primary-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Print (Jump-to-recipe Print button, proposal §05) ---------- */
+
+@media print {
+  /* Reveal-on-scroll must never hide content on paper. */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  /* Keep recipe steps and ingredient rows together where possible. */
+  li {
+    break-inside: avoid;
+  }
 }

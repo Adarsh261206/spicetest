@@ -1,8 +1,10 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Check, MapPin, Plus } from "lucide-react";
-import { collections, creatorByHandle, recipesByCreator } from "@/lib/data";
-import { RecipeCard } from "@/components/site/RecipeCard";
+import { collections, creatorByHandle } from "@/lib/data";
+import { legacyLive } from "@/lib/legacy";
+import { buildHead, breadcrumbJsonLd } from "@/lib/seo";
+import { useSaved } from "@/lib/saved";
+import { LegacyCard } from "@/components/site/LegacyCard";
 import { CollectionCard } from "@/components/site/CollectionCard";
 import { Reveal } from "@/components/site/Reveal";
 import { cn } from "@/lib/utils";
@@ -15,23 +17,20 @@ export const Route = createFileRoute("/creators/$handle")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return {
-        meta: [
-          { title: "Creator unavailable — Spice N Flavors" },
-          { name: "robots", content: "noindex" },
-        ],
-      };
+      return buildHead({
+        title: "Creator unavailable",
+        description: "This creator profile could not be found.",
+        path: "/creators",
+        noindex: true,
+      });
     }
     const { creator } = loaderData;
-    const title = `${creator.name} — ${creator.specialty} | Spice N Flavors`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: creator.bio },
-        { property: "og:title", content: title },
-        { property: "og:description", content: creator.bio },
-      ],
-    };
+    return buildHead({
+      title: `${creator.name} — ${creator.specialty}`,
+      description: creator.bio,
+      path: `/creators/${creator.handle}`,
+      image: creator.portrait,
+    });
   },
   component: CreatorProfile,
 });
@@ -40,19 +39,37 @@ const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
 
 function CreatorProfile() {
   const { creator } = Route.useLoaderData();
-  const [following, setFollowing] = useState(false);
-  const theirs = recipesByCreator(creator.handle);
+  const { isFollowing, toggleFollow } = useSaved();
+  const following = isFollowing(creator.handle);
+  const theirs = legacyLive;
   const [featured, ...latest] = theirs;
+  const crumbsLd = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Creators", path: "/creators" },
+    { name: creator.name, path: `/creators/${creator.handle}` },
+  ]);
 
   return (
     <div className="pb-10">
+      <script type="application/ld+json">{JSON.stringify(crumbsLd)}</script>
       <header className="bg-secondary/60 py-14">
         <div className={`${shell} grid gap-8 md:grid-cols-[auto_1fr] md:items-center`}>
           <div className="zoom-media size-32 overflow-hidden rounded-full border border-border sm:size-40">
             <img src={creator.portrait} alt={creator.name} className="size-full object-cover" />
           </div>
           <div className="min-w-0">
-            <h1 className="display-lg">{creator.name}</h1>
+            <nav aria-label="Breadcrumb">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                <Link to="/" className="hover:text-primary">
+                  Home
+                </Link>
+                {" / "}
+                <Link to="/creators" className="hover:text-primary">
+                  Creators
+                </Link>
+              </p>
+            </nav>
+            <h1 className="display-lg mt-3">{creator.name}</h1>
             <p className="mt-2 text-muted-foreground">{creator.specialty}</p>
             <p className="mt-4 max-w-xl leading-relaxed">{creator.bio}</p>
             <p className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -67,7 +84,7 @@ function CreatorProfile() {
               <button
                 type="button"
                 aria-pressed={following}
-                onClick={() => setFollowing((f) => !f)}
+                onClick={() => toggleFollow(creator.handle)}
                 className={cn(
                   "inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 active:scale-95",
                   following
@@ -100,10 +117,15 @@ function CreatorProfile() {
         <Reveal as="section" className={`${shell} mt-16`}>
           <p className="eyebrow">Featured recipe</p>
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <RecipeCard recipe={featured} size="lg" />
+            <LegacyCard post={featured} />
             <div className="lg:pl-6">
               <h2 className="display-md">{featured.title}</h2>
-              <p className="mt-4 text-muted-foreground">{featured.story ?? featured.blurb}</p>
+              <p className="mt-4 text-muted-foreground">
+                {featured.excerpt
+                  .replace(/&nbsp;|&#160;/g, " ")
+                  .replace(/\s+/g, " ")
+                  .trim()}
+              </p>
             </div>
           </div>
         </Reveal>
@@ -113,8 +135,8 @@ function CreatorProfile() {
         <Reveal as="section" className={`${shell} mt-20`}>
           <h2 className="display-lg">Latest recipes</h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {latest.map((r) => (
-              <RecipeCard key={r.slug} recipe={r} size="sm" />
+            {latest.slice(0, 6).map((p) => (
+              <LegacyCard key={p.slug} post={p} size="sm" />
             ))}
           </div>
         </Reveal>

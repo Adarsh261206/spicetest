@@ -18,7 +18,9 @@ export const sessions = pgTable("sessions", {
   expiresAt: text("expires_at").notNull(),
 });
 
-/** Blog posts created in /admin. Covers stored as base64 (blog-scale, no extra service). */
+/** Blog posts created in /admin. Covers stored as base64 (blog-scale, no extra service).
+ *  kind = 'article' renders on /blog, 'recipe' renders on /recipes/$slug with
+ *  the same template as curated recipes (recipe_json = structured RecipeDraft). */
 export const posts = pgTable("posts", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -32,6 +34,8 @@ export const posts = pgTable("posts", {
   status: text("status").notNull().default("draft"),
   author: text("author").notNull().default("Spice N Flavors"),
   readingTime: integer("reading_time").notNull().default(3),
+  kind: text("kind").notNull().default("article"),
+  recipeJson: text("recipe_json"),
   publishedAt: text("published_at"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

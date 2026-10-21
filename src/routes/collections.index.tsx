@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { collections } from "@/lib/data";
+import { buildHead } from "@/lib/seo";
 import { CollectionCard } from "@/components/site/CollectionCard";
 import { Reveal } from "@/components/site/Reveal";
+import { SponsorBanner } from "@/components/site/Monetization";
 
-export const Route = createFileRoute("/collections")({
-  head: () => ({
-    meta: [
-      { title: "Collections — save the mood | Spice N Flavors" },
-      {
-        name: "description",
-        content:
-          "Weeknight Wonders, Weekend Brunch, Comfort Food and more: curated recipe collections for every kind of day.",
-      },
-      { property: "og:title", content: "Collections — save the mood" },
-      {
-        property: "og:description",
-        content: "Curated recipe collections for every kind of day.",
-      },
-    ],
-  }),
+export const Route = createFileRoute("/collections/")({
+  head: () =>
+    buildHead({
+      title: "Collections — save the mood",
+      description:
+        "Weeknight Wonders, Weekend Brunch, Comfort Food and more: curated recipe collections for every kind of day.",
+      path: "/collections",
+    }),
   component: CollectionsPage,
 });
 
@@ -44,6 +38,10 @@ function CollectionsPage() {
             </div>
           </Reveal>
         ))}
+      </div>
+
+      <div className="mt-16">
+        <SponsorBanner />
       </div>
     </div>
   );

@@ -1,24 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { creators, recipesByCreator } from "@/lib/data";
+import { creators } from "@/lib/data";
+import { legacyCover, legacyLive } from "@/lib/legacy";
+import { buildHead } from "@/lib/seo";
 import { Reveal } from "@/components/site/Reveal";
 
 export const Route = createFileRoute("/creators/")({
-  head: () => ({
-    meta: [
-      { title: "Viya Sheth — the cook behind the recipes | Spice N Flavors" },
-      {
-        name: "description",
-        content:
-          "Viya Sheth cooks, tests and writes every recipe on Spice N Flavors, from Gujarati breakfasts to Hyderabadi dum biryani.",
-      },
-      { property: "og:title", content: "The person behind the plate" },
-      {
-        property: "og:description",
-        content: "One kitchen, one cook, every recipe tested by hand.",
-      },
-    ],
-  }),
+  head: () =>
+    buildHead({
+      title: "Viya Sheth — the cook behind the recipes",
+      description:
+        "Viya Sheth cooks, tests and writes every recipe on Spice N Flavors, from Gujarati breakfasts to Hyderabadi dum biryani.",
+      path: "/creators",
+    }),
   component: CreatorsPage,
 });
 
@@ -38,7 +32,7 @@ function CreatorsPage() {
 
       <div className="mt-14 space-y-14">
         {creators.map((creator, i) => {
-          const theirs = recipesByCreator(creator.handle).slice(0, 3);
+          const theirs = legacyLive.slice(0, 3);
           return (
             <Reveal
               key={creator.handle}
@@ -71,7 +65,7 @@ function CreatorsPage() {
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">{creator.specialty}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {theirs.length} recipes · {creator.location}
+                      {legacyLive.length} recipes · {creator.location}
                     </p>
                   </div>
                 </div>
@@ -90,16 +84,16 @@ function CreatorsPage() {
               </div>
 
               <div className={`grid grid-cols-3 gap-4 ${i % 2 === 1 ? "lg:order-1" : ""}`}>
-                {theirs.map((r, j) => (
+                {theirs.map((p, j) => (
                   <Link
-                    key={r.slug}
-                    to="/recipes/$slug"
-                    params={{ slug: r.slug }}
+                    key={p.slug}
+                    to="/blog/$slug"
+                    params={{ slug: p.slug }}
                     className={`zoom-media lift block overflow-hidden rounded-2xl border border-border ${j === 1 ? "mt-6" : ""}`}
                   >
                     <img
-                      src={r.image}
-                      alt={r.title}
+                      src={legacyCover(p)}
+                      alt={p.title}
                       loading="lazy"
                       className="aspect-3/4 w-full object-cover"
                     />

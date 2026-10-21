@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { meFn, loginFn } from "@/lib/auth.api";
+import { buildHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/admin/login")({
   loader: async () => {
@@ -8,6 +9,13 @@ export const Route = createFileRoute("/admin/login")({
     if (me && !("dbMissing" in me)) throw redirect({ to: "/admin" });
     return { dbMissing: Boolean(me && "dbMissing" in me) };
   },
+  head: () =>
+    buildHead({
+      title: "Admin sign in",
+      description: "Spice N Flavors content studio sign in.",
+      path: "/admin/login",
+      noindex: true,
+    }),
   component: AdminLogin,
 });
 
@@ -47,8 +55,12 @@ function AdminLogin() {
           try {
             await loginFn({ data: { email, password } });
             await navigate({ to: "/admin" });
-          } catch {
-            setError("Wrong email or password.");
+          } catch (e) {
+            setError(
+              e instanceof Error && e.message === "RATE_LIMITED"
+                ? "Too many wrong tries — wait 10 minutes and try again."
+                : "Wrong email or password.",
+            );
           } finally {
             setBusy(false);
           }

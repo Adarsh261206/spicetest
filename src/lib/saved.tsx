@@ -14,22 +14,24 @@ type SavedState = {
   saved: string[];
   recent: string[];
   collections: UserCollection[];
+  followed: string[];
 };
 
 const STORAGE_KEY = "verdant-kitchen-state-v1";
 
 const initial: SavedState = {
-  saved: ["roasted-garlic-butter-pasta", "silky-miso-butter-noodles"],
-  recent: ["country-sourdough", "weeknight-butter-chicken"],
+  saved: ["dal-makhani", "besan-ladoos"],
+  recent: ["aloo-paratha", "paneer-tikka-bbq-skewers-and-refreshing"],
+  followed: [],
   collections: [
     {
       id: "c1",
       name: "My Weeknight Recipes",
-      slugs: ["silky-miso-butter-noodles", "soft-scrambled-eggs-greens"],
+      slugs: ["dal-makhani", "besan-ladoos"],
     },
-    { id: "c2", name: "Things I Want To Try", slugs: ["country-sourdough"] },
-    { id: "c3", name: "Sunday Baking", slugs: ["olive-oil-citrus-cake"] },
-    { id: "c4", name: "High Protein", slugs: ["crispy-chickpea-grain-bowl"] },
+    { id: "c2", name: "Things I Want To Try", slugs: ["paneer-tikka-bbq-skewers-and-refreshing"] },
+    { id: "c3", name: "Sunday Baking", slugs: ["pineapple-upside-down-cake"] },
+    { id: "c4", name: "High Protein", slugs: ["hara-bhara-kebabs"] },
   ],
 };
 
@@ -37,6 +39,8 @@ type Ctx = SavedState & {
   toggleSave: (slug: string) => void;
   isSaved: (slug: string) => boolean;
   markViewed: (slug: string) => void;
+  toggleFollow: (handle: string) => void;
+  isFollowing: (handle: string) => boolean;
   createCollection: (name: string) => void;
   renameCollection: (id: string, name: string) => void;
   removeFromCollection: (id: string, slug: string) => void;
@@ -81,12 +85,23 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const toggleFollow = useCallback((handle: string) => {
+    setState((s) => ({
+      ...s,
+      followed: s.followed.includes(handle)
+        ? s.followed.filter((x) => x !== handle)
+        : [...s.followed, handle],
+    }));
+  }, []);
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
       toggleSave,
       markViewed,
       isSaved: (slug) => state.saved.includes(slug),
+      toggleFollow,
+      isFollowing: (handle) => state.followed.includes(handle),
       createCollection: (name) =>
         setState((s) => ({
           ...s,
@@ -114,7 +129,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
           ),
         })),
     }),
-    [state, toggleSave, markViewed],
+    [state, toggleSave, markViewed, toggleFollow],
   );
 
   return <SavedContext.Provider value={value}>{children}</SavedContext.Provider>;

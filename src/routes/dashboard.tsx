@@ -1,27 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Pencil, Plus, Share2, Trash2, X } from "lucide-react";
-import { recipeBySlug, recipes, recipesByCreator } from "@/lib/data";
+import { creators, type Recipe } from "@/lib/data";
+import { legacyBySlug, legacyCover, type LegacyPost } from "@/lib/legacy";
+import { listPublishedRecipesFn } from "@/lib/posts.api";
+import { buildHead } from "@/lib/seo";
 import { RecipeCard } from "@/components/site/RecipeCard";
+import { LegacyCard } from "@/components/site/LegacyCard";
+import { CreatorCard } from "@/components/site/CreatorCard";
 import { useSaved } from "@/lib/saved";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({
-    meta: [
-      { title: "Your kitchen — saved recipes and collections | Spice N Flavors" },
-      {
-        name: "description",
-        content:
-          "Saved recipes, your collections, recently viewed dishes and the recipes you've published.",
-      },
-      { property: "og:title", content: "Your kitchen — Spice N Flavors" },
-      {
-        property: "og:description",
-        content: "Saved recipes, collections, recently viewed and your published recipes.",
-      },
-    ],
-  }),
+  loader: async () => ({ dbRecipes: await listPublishedRecipesFn() }),
+  head: () =>
+    buildHead({
+      title: "Your kitchen — saved recipes and collections",
+      description:
+        "Saved recipes, your collections, recently viewed dishes and the recipes you've published.",
+      path: "/dashboard",
+      noindex: true,
+    }),
   component: Dashboard,
 });
 
@@ -35,7 +34,11 @@ const sections = [
   "Cooking History",
 ] as const;
 
+type SavedItem = { kind: "legacy"; post: LegacyPost } | { kind: "db"; recipe: Recipe };
+
 function Dashboard() {
+  const { dbRecipes: rawRecipes } = Route.useLoaderData();
+  const dbRecipes = rawRecipes as (Recipe & { date?: string })[];
   const [tab, setTab] = useState<(typeof sections)[number]>("Saved Recipes");
   const {
     saved,
@@ -50,9 +53,24 @@ function Dashboard() {
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const savedRecipes = saved.map(recipeBySlug).filter(Boolean);
-  const recentRecipes = recent.map(recipeBySlug).filter(Boolean);
-  const mine = recipesByCreator("maya-chen").slice(0, 3);
+  const resolve = (slug: string): SavedItem | null => {
+    const post = legacyBySlug(slug);
+    if (post) return { kind: "legacy", post };
+    const recipe = dbRecipes.find((r) => r.slug === slug);
+    if (recipe) return { kind: "db", recipe };
+    return null;
+  };
+
+  const savedItems = saved.map(resolve).filter((x): x is SavedItem => Boolean(x));
+  const recentItems = recent.map(resolve).filter((x): x is SavedItem => Boolean(x));
+  const mine = dbRecipes.slice(0, 8);
+
+  const renderCard = (item: SavedItem) =>
+    item.kind === "legacy" ? (
+      <LegacyCard key={item.post.slug} post={item.post} size="sm" />
+    ) : (
+      <RecipeCard key={item.recipe.slug} recipe={item.recipe} size="sm" />
+    );
 
   return (
     <div className={`${shell} pb-8 pt-8`}>
@@ -69,6 +87,7 @@ function Dashboard() {
         {sections.map((s) => (
           <button
             key={s}
+            type="button"
             role="tab"
             aria-selected={tab === s}
             onClick={() => setTab(s)}
@@ -86,65 +105,69 @@ function Dashboard() {
 
       <div className="mt-12">
         {tab === "Saved Recipes" &&
-          (savedRecipes.length ? (
-            <Grid>
-              {savedRecipes.map((r) => (
-                <RecipeCard key={r!.slug} recipe={r!} size="sm" />
-              ))}
-            </Grid>
+          (savedItems.length ? (
+            <Grid>{savedItems.map(renderCard)}</Grid>
           ) : (
             <Empty text="Nothing saved yet. Tap the bookmark on any recipe." />
           ))}
 
         {tab === "Recently Viewed" &&
-          (recentRecipes.length ? (
-            <Grid>
-              {recentRecipes.map((r) => (
-                <RecipeCard key={r!.slug} recipe={r!} size="sm" />
-              ))}
-            </Grid>
+          (recentItems.length ? (
+            <Grid>{recentItems.map(renderCard)}</Grid>
           ) : (
             <Empty text="You haven't opened a recipe yet." />
           ))}
 
-        {tab === "My Recipes" && (
-          <Grid>
-            {mine.map((r) => (
-              <RecipeCard key={r.slug} recipe={r} size="sm" />
-            ))}
-          </Grid>
-        )}
+        {tab === "My Recipes" &&
+          (mine.length ? (
+            <Grid>
+              {mine.map((r) => (
+                <RecipeCard key={r.slug} recipe={r} size="sm" />
+              ))}
+            </Grid>
+          ) : (
+            <Empty text="You haven't published a recipe yet." />
+          ))}
 
-        {tab === "Cooking History" && (
-          <ul className="divide-y divide-border rounded-2xl border border-border">
-            {recipes.slice(0, 5).map((r, i) => (
-              <li key={r.slug} className="flex items-center gap-4 p-4">
-                <img
-                  src={r.image}
-                  alt=""
-                  aria-hidden
-                  loading="lazy"
-                  className="size-12 rounded-xl object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <Link
-                    to="/recipes/$slug"
-                    params={{ slug: r.slug }}
-                    className="truncate font-medium hover:text-primary"
-                  >
-                    {r.title}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">Cooked {i + 1}x · last week</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        {tab === "Cooking History" &&
+          (recentItems.length ? (
+            <ul className="divide-y divide-border rounded-2xl border border-border">
+              {recentItems.slice(0, 6).map((item) => {
+                const slug = item.kind === "legacy" ? item.post.slug : item.recipe.slug;
+                const title = item.kind === "legacy" ? item.post.title : item.recipe.title;
+                const image = item.kind === "legacy" ? legacyCover(item.post) : item.recipe.image;
+                const to = item.kind === "legacy" ? "/blog/$slug" : "/recipes/$slug";
+                return (
+                  <li key={slug} className="flex items-center gap-4 p-4">
+                    <img
+                      src={image}
+                      alt=""
+                      aria-hidden
+                      loading="lazy"
+                      className="size-12 rounded-xl object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        to={to}
+                        params={{ slug }}
+                        className="truncate font-medium hover:text-primary"
+                      >
+                        {title}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">Cooked recently</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <Empty text="No cooking history yet." />
+          ))}
 
         {tab === "Following" && (
           <Grid>
-            {recipes.slice(0, 6).map((r) => (
-              <RecipeCard key={r.slug} recipe={r} size="sm" />
+            {creators.map((c) => (
+              <CreatorCard key={c.handle} creator={c} />
             ))}
           </Grid>
         )}
@@ -242,29 +265,33 @@ function Dashboard() {
                       <li className="text-sm text-muted-foreground">Empty for now.</li>
                     )}
                     {c.slugs.map((slug) => {
-                      const r = recipeBySlug(slug);
-                      if (!r) return null;
+                      const item = resolve(slug);
+                      if (!item) return null;
+                      const title = item.kind === "legacy" ? item.post.title : item.recipe.title;
+                      const image =
+                        item.kind === "legacy" ? legacyCover(item.post) : item.recipe.image;
+                      const to = item.kind === "legacy" ? "/blog/$slug" : "/recipes/$slug";
                       return (
                         <li
                           key={slug}
                           className="flex items-center gap-3 rounded-xl bg-background p-2"
                         >
                           <img
-                            src={r.image}
+                            src={image}
                             alt=""
                             aria-hidden
                             loading="lazy"
                             className="size-10 rounded-lg object-cover"
                           />
                           <Link
-                            to="/recipes/$slug"
+                            to={to}
                             params={{ slug }}
                             className="min-w-0 flex-1 truncate text-sm hover:text-primary"
                           >
-                            {r.title}
+                            {title}
                           </Link>
                           <IconBtn
-                            label={`Remove ${r.title}`}
+                            label={`Remove ${title}`}
                             onClick={() => removeFromCollection(c.id, slug)}
                           >
                             <X className="size-4" strokeWidth={1.7} />

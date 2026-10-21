@@ -1,0 +1,10 @@
+{
+  "name": "Spice N Flavors",
+  "short_name": "Spice N Flavors",
+  "description": "Indian recipes that work, cooking techniques and food stories.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F9EB",
+  "theme_color": "#F8F9EB",
+  "icons": [{ "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }]
+}

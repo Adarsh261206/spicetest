@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { ArrowLeft, FileText, LogOut, Plus } from "lucide-react";
+import { ArrowLeft, ChefHat, FileText, LogOut, Plus } from "lucide-react";
 import { logoutFn } from "@/lib/auth.api";
 
 const shell = "mx-auto w-full max-w-[1100px] px-5 sm:px-8";
@@ -26,6 +26,13 @@ export function AdminShell({
         >
           <FileText className="size-4" strokeWidth={1.7} />
           Posts
+        </Link>
+        <Link
+          to="/admin/recipes/new"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:border-primary"
+        >
+          <ChefHat className="size-4" strokeWidth={1.7} />
+          New recipe
         </Link>
         <Link
           to="/admin/posts/new"

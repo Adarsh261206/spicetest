@@ -13,8 +13,8 @@ export function CollectionCard({
 }) {
   return (
     <Link
-      to="/collections"
-      hash={collection.slug}
+      to="/collections/$slug"
+      params={{ slug: collection.slug }}
       className={cn("lift group block overflow-hidden rounded-2xl border border-border", className)}
     >
       <div className={cn("zoom-media relative", tall ? "aspect-[3/4]" : "aspect-[5/4]")}>

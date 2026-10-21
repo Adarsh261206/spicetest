@@ -30,11 +30,16 @@ async function main() {
   const u = found[0]!;
   console.log("user insert+select:", u.email === email ? "OK" : "FAIL");
   console.log("password ok:", verifyPassword("secret-123", u.passSalt, u.passHash) ? "OK" : "FAIL");
-  console.log("password wrong rejected:", !verifyPassword("nope", u.passSalt, u.passHash) ? "OK" : "FAIL");
+  console.log(
+    "password wrong rejected:",
+    !verifyPassword("nope", u.passSalt, u.passHash) ? "OK" : "FAIL",
+  );
 
   // sessions
   const tokenHash = createHash("sha256").update("tok").digest("hex");
-  await db.insert(sessions).values({ tokenHash, userId: u.id, expiresAt: new Date(Date.now() + 1000).toISOString() });
+  await db
+    .insert(sessions)
+    .values({ tokenHash, userId: u.id, expiresAt: new Date(Date.now() + 1000).toISOString() });
   const s = await db.select().from(sessions).where(eq(sessions.tokenHash, tokenHash)).limit(1);
   console.log("session round-trip:", s.length === 1 ? "OK" : "FAIL");
   await db.delete(sessions).where(eq(sessions.tokenHash, tokenHash));
@@ -62,7 +67,10 @@ async function main() {
   });
   const got = (await db.select().from(posts).where(eq(posts.slug, "test-post")).limit(1))[0]!;
   console.log("post crud:", got.title === "Test Post" ? "OK" : "FAIL");
-  console.log("cover round-trip:", Buffer.from(got.coverData!, "base64").toString() === "fake-image-bytes" ? "OK" : "FAIL");
+  console.log(
+    "cover round-trip:",
+    Buffer.from(got.coverData!, "base64").toString() === "fake-image-bytes" ? "OK" : "FAIL",
+  );
   await db.update(posts).set({ status: "draft" }).where(eq(posts.id, id));
   const drafts = await db.select().from(posts).where(eq(posts.status, "draft"));
   console.log("status update:", drafts.length === 1 ? "OK" : "FAIL");

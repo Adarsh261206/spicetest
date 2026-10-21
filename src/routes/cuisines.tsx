@@ -1,31 +1,35 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { cuisineRegions, recipes } from "@/lib/data";
-import { RecipeCard } from "@/components/site/RecipeCard";
+import { cuisineRegions } from "@/lib/data";
+import { legacyLive } from "@/lib/legacy";
+import { legacyCategory } from "@/lib/legacy-categories";
+import { buildHead } from "@/lib/seo";
+import { LegacyCard } from "@/components/site/LegacyCard";
 import { Reveal } from "@/components/site/Reveal";
 
 export const Route = createFileRoute("/cuisines")({
-  head: () => ({
-    meta: [
-      { title: "Cuisines — regional Indian cooking and beyond | Spice N Flavors" },
-      {
-        name: "description",
-        content:
-          "North Indian, South Indian, Punjabi, Gujarati, Continental and desserts — explore recipes through the regions and traditions that shape them.",
-      },
-      { property: "og:title", content: "Where flavor takes you — Spice N Flavors" },
-      {
-        property: "og:description",
-        content: "Explore recipes through the regions, traditions and cuisines that shape them.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildHead({
+      title: "Cuisines — regional Indian cooking and beyond",
+      description:
+        "North Indian, South Indian, Punjabi, Gujarati, Continental and desserts — explore recipes through the regions that shape them.",
+      path: "/cuisines",
+    }),
   component: CuisinesPage,
 });
 
 const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
+
+/** Region slug -> title keywords over the real (recovered) posts. */
+const REGION_KEYWORDS: Record<string, RegExp> = {
+  "north-indian":
+    /makhani|butter|paneer|tikka|naan|dal|rajma|chole|korma|masala|kebab|paratha|biryani/i,
+  "south-indian": /dosa|idli|sambar|rasam|upma|uttapam|chettinad|avial|poriyal|kootu/i,
+  punjabi: /paratha|chole|paneer|lassi|samosa|kadhi|rajma|sarson|makki/i,
+  gujarati: /dhokla|khaman|thepla|fafda|khandvi|handvo|undhiyu|shrikhand|farsi|khakhra/i,
+  continental: /pasta|pizza|bake|baked|salad|soup|sandwich|bread|toast|risotto|penne/i,
+  desserts: /./,
+};
 
 function CuisinesPage() {
   return (
@@ -40,14 +44,16 @@ function CuisinesPage() {
 
       <div className="mt-14 space-y-16">
         {cuisineRegions.map((region, i) => {
-          const theirs = recipes
-            .filter(
-              (r) =>
-                r.cuisine === region.name ||
-                r.category === region.name ||
-                r.tags.includes(region.name),
-            )
-            .slice(0, 3);
+          const matcher = REGION_KEYWORDS[region.slug];
+          const theirs = matcher
+            ? legacyLive
+                .filter((p) =>
+                  region.slug === "desserts"
+                    ? legacyCategory(p) === "Dessert"
+                    : matcher.test(p.title),
+                )
+                .slice(0, 3)
+            : [];
 
           return (
             <Reveal
@@ -82,9 +88,9 @@ function CuisinesPage() {
               </div>
 
               <div className={`grid gap-5 sm:grid-cols-3 ${i % 2 === 1 ? "lg:order-1" : ""}`}>
-                {theirs.map((r, j) => (
-                  <div key={r.slug} className={j === 1 ? "sm:mt-8" : ""}>
-                    <RecipeCard recipe={r} size="sm" />
+                {theirs.map((p, j) => (
+                  <div key={p.slug} className={j === 1 ? "sm:mt-8" : ""}>
+                    <LegacyCard post={p} size="sm" />
                   </div>
                 ))}
               </div>

@@ -11,20 +11,25 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
-import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CuisinesRouteImport } from './routes/cuisines'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DisclosureRouteImport } from './routes/disclosure'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
+import { Route as CollectionsSlugRouteImport } from './routes/collections.$slug'
 import { Route as CreatorsIndexRouteImport } from './routes/creators.index'
 import { Route as CreatorsHandleRouteImport } from './routes/creators.$handle'
 import { Route as RecipesIndexRouteImport } from './routes/recipes.index'
 import { Route as RecipesSlugRouteImport } from './routes/recipes.$slug'
 import { Route as AdminPostsPostIdRouteImport } from './routes/admin.posts.$postId'
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
+import { Route as AdminRecipesRecipeIdRouteImport } from './routes/admin.recipes.$recipeId'
+import { Route as AdminRecipesNewRouteImport } from './routes/admin.recipes.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,11 +41,6 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CollectionsRoute = CollectionsRouteImport.update({
-  id: '/collections',
-  path: '/collections',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CuisinesRoute = CuisinesRouteImport.update({
   id: '/cuisines',
   path: '/cuisines',
@@ -49,6 +49,16 @@ const CuisinesRoute = CuisinesRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DisclosureRoute = DisclosureRouteImport.update({
+  id: '/disclosure',
+  path: '/disclosure',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShareRoute = ShareRouteImport.update({
@@ -74,6 +84,16 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog/$slug',
   path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
+  id: '/collections/',
+  path: '/collections/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsSlugRoute = CollectionsSlugRouteImport.update({
+  id: '/collections/$slug',
+  path: '/collections/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreatorsIndexRoute = CreatorsIndexRouteImport.update({
@@ -106,136 +126,181 @@ const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
   path: '/admin/posts/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRecipesRecipeIdRoute = AdminRecipesRecipeIdRouteImport.update({
+  id: '/admin/recipes/$recipeId',
+  path: '/admin/recipes/$recipeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRecipesNewRoute = AdminRecipesNewRouteImport.update({
+  id: '/admin/recipes/new',
+  path: '/admin/recipes/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/collections': typeof CollectionsRoute
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
+  '/disclosure': typeof DisclosureRoute
+  '/privacy': typeof PrivacyRoute
   '/share': typeof ShareRoute
   '/admin/login': typeof AdminLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/collections/$slug': typeof CollectionsSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
   '/recipes/$slug': typeof RecipesSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/collections/': typeof CollectionsIndexRoute
   '/creators/': typeof CreatorsIndexRoute
   '/recipes/': typeof RecipesIndexRoute
   '/admin/posts/$postId': typeof AdminPostsPostIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/recipes/$recipeId': typeof AdminRecipesRecipeIdRoute
+  '/admin/recipes/new': typeof AdminRecipesNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/collections': typeof CollectionsRoute
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
+  '/disclosure': typeof DisclosureRoute
+  '/privacy': typeof PrivacyRoute
   '/share': typeof ShareRoute
   '/admin/login': typeof AdminLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/collections/$slug': typeof CollectionsSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
   '/recipes/$slug': typeof RecipesSlugRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
+  '/collections': typeof CollectionsIndexRoute
   '/creators': typeof CreatorsIndexRoute
   '/recipes': typeof RecipesIndexRoute
   '/admin/posts/$postId': typeof AdminPostsPostIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/recipes/$recipeId': typeof AdminRecipesRecipeIdRoute
+  '/admin/recipes/new': typeof AdminRecipesNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/collections': typeof CollectionsRoute
   '/cuisines': typeof CuisinesRoute
   '/dashboard': typeof DashboardRoute
+  '/disclosure': typeof DisclosureRoute
+  '/privacy': typeof PrivacyRoute
   '/share': typeof ShareRoute
   '/admin/login': typeof AdminLoginRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/collections/$slug': typeof CollectionsSlugRoute
   '/creators/$handle': typeof CreatorsHandleRoute
   '/recipes/$slug': typeof RecipesSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/collections/': typeof CollectionsIndexRoute
   '/creators/': typeof CreatorsIndexRoute
   '/recipes/': typeof RecipesIndexRoute
   '/admin/posts/$postId': typeof AdminPostsPostIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/recipes/$recipeId': typeof AdminRecipesRecipeIdRoute
+  '/admin/recipes/new': typeof AdminRecipesNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
-    | '/collections'
     | '/cuisines'
     | '/dashboard'
+    | '/disclosure'
+    | '/privacy'
     | '/share'
     | '/admin/login'
     | '/blog/$slug'
+    | '/collections/$slug'
     | '/creators/$handle'
     | '/recipes/$slug'
     | '/admin/'
     | '/blog/'
+    | '/collections/'
     | '/creators/'
     | '/recipes/'
     | '/admin/posts/$postId'
     | '/admin/posts/new'
+    | '/admin/recipes/$recipeId'
+    | '/admin/recipes/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/collections'
     | '/cuisines'
     | '/dashboard'
+    | '/disclosure'
+    | '/privacy'
     | '/share'
     | '/admin/login'
     | '/blog/$slug'
+    | '/collections/$slug'
     | '/creators/$handle'
     | '/recipes/$slug'
     | '/admin'
     | '/blog'
+    | '/collections'
     | '/creators'
     | '/recipes'
     | '/admin/posts/$postId'
     | '/admin/posts/new'
+    | '/admin/recipes/$recipeId'
+    | '/admin/recipes/new'
   id:
     | '__root__'
     | '/'
     | '/about'
-    | '/collections'
     | '/cuisines'
     | '/dashboard'
+    | '/disclosure'
+    | '/privacy'
     | '/share'
     | '/admin/login'
     | '/blog/$slug'
+    | '/collections/$slug'
     | '/creators/$handle'
     | '/recipes/$slug'
     | '/admin/'
     | '/blog/'
+    | '/collections/'
     | '/creators/'
     | '/recipes/'
     | '/admin/posts/$postId'
     | '/admin/posts/new'
+    | '/admin/recipes/$recipeId'
+    | '/admin/recipes/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  CollectionsRoute: typeof CollectionsRoute
   CuisinesRoute: typeof CuisinesRoute
   DashboardRoute: typeof DashboardRoute
+  DisclosureRoute: typeof DisclosureRoute
+  PrivacyRoute: typeof PrivacyRoute
   ShareRoute: typeof ShareRoute
   AdminLoginRoute: typeof AdminLoginRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  CollectionsSlugRoute: typeof CollectionsSlugRoute
   CreatorsHandleRoute: typeof CreatorsHandleRoute
   RecipesSlugRoute: typeof RecipesSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  CollectionsIndexRoute: typeof CollectionsIndexRoute
   CreatorsIndexRoute: typeof CreatorsIndexRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
   AdminPostsPostIdRoute: typeof AdminPostsPostIdRoute
   AdminPostsNewRoute: typeof AdminPostsNewRoute
+  AdminRecipesRecipeIdRoute: typeof AdminRecipesRecipeIdRoute
+  AdminRecipesNewRoute: typeof AdminRecipesNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -254,13 +319,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/collections': {
-      id: '/collections'
-      path: '/collections'
-      fullPath: '/collections'
-      preLoaderRoute: typeof CollectionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/cuisines': {
       id: '/cuisines'
       path: '/cuisines'
@@ -273,6 +331,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/disclosure': {
+      id: '/disclosure'
+      path: '/disclosure'
+      fullPath: '/disclosure'
+      preLoaderRoute: typeof DisclosureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/share': {
@@ -308,6 +380,20 @@ declare module '@tanstack/react-router' {
       path: '/blog/$slug'
       fullPath: '/blog/$slug'
       preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections/': {
+      id: '/collections/'
+      path: '/collections'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof CollectionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections/$slug': {
+      id: '/collections/$slug'
+      path: '/collections/$slug'
+      fullPath: '/collections/$slug'
+      preLoaderRoute: typeof CollectionsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/creators/': {
@@ -352,26 +438,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPostsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/recipes/$recipeId': {
+      id: '/admin/recipes/$recipeId'
+      path: '/admin/recipes/$recipeId'
+      fullPath: '/admin/recipes/$recipeId'
+      preLoaderRoute: typeof AdminRecipesRecipeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/recipes/new': {
+      id: '/admin/recipes/new'
+      path: '/admin/recipes/new'
+      fullPath: '/admin/recipes/new'
+      preLoaderRoute: typeof AdminRecipesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  CollectionsRoute: CollectionsRoute,
   CuisinesRoute: CuisinesRoute,
   DashboardRoute: DashboardRoute,
+  DisclosureRoute: DisclosureRoute,
+  PrivacyRoute: PrivacyRoute,
   ShareRoute: ShareRoute,
   AdminLoginRoute: AdminLoginRoute,
   BlogSlugRoute: BlogSlugRoute,
+  CollectionsSlugRoute: CollectionsSlugRoute,
   CreatorsHandleRoute: CreatorsHandleRoute,
   RecipesSlugRoute: RecipesSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
+  CollectionsIndexRoute: CollectionsIndexRoute,
   CreatorsIndexRoute: CreatorsIndexRoute,
   RecipesIndexRoute: RecipesIndexRoute,
   AdminPostsPostIdRoute: AdminPostsPostIdRoute,
   AdminPostsNewRoute: AdminPostsNewRoute,
+  AdminRecipesRecipeIdRoute: AdminRecipesRecipeIdRoute,
+  AdminRecipesNewRoute: AdminRecipesNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

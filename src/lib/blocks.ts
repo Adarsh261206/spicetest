@@ -1,4 +1,5 @@
 /** Content blocks for admin-created posts. Client-safe (no node imports). */
+import type { RecipeDraft } from "./recipe";
 
 export type PostBlock =
   | { type: "paragraph"; text: string }
@@ -20,6 +21,10 @@ export type DbPostPublic = {
   date: string;
   body: PostBlock[];
   draft: false;
+  /** 'article' renders on /blog, 'recipe' on /recipes (Recipe Studio). */
+  kind: string;
+  /** Structured recipe when kind === 'recipe', else null. */
+  recipe: RecipeDraft | null;
 };
 
 export function coverUrlFor(id: string, hasCover: boolean): string | null {

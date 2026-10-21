@@ -2,31 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { articles, creatorByHandle, featuredArticle } from "@/lib/data";
-import { formatLegacyDate, legacyCover, legacyPosts, legacyYears } from "@/lib/legacy";
+import { formatLegacyDate, legacyCover, legacyLive, legacyPosts, legacyYears } from "@/lib/legacy";
 import { listPublishedPostsFn } from "@/lib/posts.api";
 import type { DbPostPublic } from "@/lib/blocks";
 import { Reveal } from "@/components/site/Reveal";
+import { AD_SLOTS, AdSlot } from "@/components/site/Monetization";
 import { cn } from "@/lib/utils";
+import { buildHead, itemListJsonLd } from "@/lib/seo";
+import { legacyCategory } from "@/lib/legacy-categories";
 
 export const Route = createFileRoute("/blog/")({
   loader: async () => ({ fresh: await listPublishedPostsFn() }),
-  head: () => ({
-    meta: [
-      { title: "The Blog — cooking guides and kitchen notes | Spice N Flavors" },
-      {
-        name: "description",
-        content:
-          "Kitchen tips, cooking guides and ingredient stories: spice boxes, dosa fermentation, tempering, basmati rice and how to get real char on chicken.",
-      },
-      { property: "og:title", content: "From the kitchen — the Spice N Flavors blog" },
-      {
-        property: "og:description",
-        content: "Cooking guides, kitchen tips and ingredient stories written by people who cook.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildHead({
+      title: "Kitchen notes — guides, tips and ingredient stories",
+      description:
+        "Kitchen tips, cooking guides and ingredient stories: spice boxes, dosa fermentation, tempering and basmati rice.",
+      path: "/blog",
+    }),
   component: BlogPage,
 });
 
@@ -37,11 +30,30 @@ function BlogPage() {
   const { fresh } = Route.useLoaderData();
   // Fresh admin posts first; the hand-written guides fill in until there are some.
   const rest = fresh.length > 0 ? [] : articles.filter((a) => a.slug !== featuredArticle.slug);
+  // Blueprint §2 (R5): ItemList of the page's lead stories for search engines.
+  const listLd = itemListJsonLd("/blog", [
+    {
+      name: featuredArticle.title,
+      path: `/blog/${featuredArticle.slug}`,
+      image: featuredArticle.image,
+    },
+    ...fresh.slice(0, 6).map((p: DbPostPublic) => ({
+      name: p.title,
+      path: `/blog/${p.slug}`,
+      ...(p.coverUrl ? { image: p.coverUrl } : {}),
+    })),
+    ...rest.slice(0, 6).map((a) => ({
+      name: a.title,
+      path: `/blog/${a.slug}`,
+      image: a.image,
+    })),
+  ]);
 
   return (
     <div className={`${shell} pb-8 pt-8`}>
+      <script type="application/ld+json">{JSON.stringify(listLd)}</script>
       <header className="max-w-2xl">
-        <p className="eyebrow">Blog</p>
+        <p className="eyebrow">Kitchen notes</p>
         <h1 className="display-lg mt-3">From the kitchen.</h1>
         <p className="mt-5 text-muted-foreground">
           Technique, ingredients and the small decisions that separate a dish that works from one
@@ -154,6 +166,8 @@ function ArchiveSection() {
 
   const filtered = useMemo(() => {
     return legacyPosts.filter((p) => {
+      // Draft recoveries are review-only: reachable by URL, never listed.
+      if (p.draft) return false;
       if (year !== "All") {
         const y = p.date ? p.date.slice(0, 4) : "Unknown";
         if (y !== year) return false;
@@ -169,14 +183,13 @@ function ArchiveSection() {
   const visible = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <section aria-label="From the archive" className="mt-20">
+    <section aria-label="All recipes" className="mt-20">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Archive</p>
-          <h2 className="display-lg mt-3">From the old blog.</h2>
+          <p className="eyebrow">Every recipe</p>
+          <h2 className="display-lg mt-3">All recipes in one place.</h2>
           <p className="mt-3 max-w-xl text-muted-foreground">
-            Every recipe from spicenflavors.com, preserved as it was — {legacyPosts.length} posts
-            from 2012 onwards.
+            Every recipe on spicenflavors.com — {legacyLive.length} posts from 2012 onwards.
           </p>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -200,7 +213,7 @@ function ArchiveSection() {
               setQuery(e.target.value);
               setPage(0);
             }}
-            placeholder="Search 140+ old recipes… try “biryani” or “cake”"
+            placeholder="Search 130+ recipes… try “biryani” or “cake”"
             className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-hidden placeholder:text-muted-foreground/80"
           />
         </div>
@@ -250,7 +263,7 @@ function ArchiveSection() {
                   </span>
                 )}
               </div>
-              <p className="eyebrow mt-4">{p.category}</p>
+              <p className="eyebrow mt-4">{legacyCategory(p) || "Recipe"}</p>
               <h3 className="mt-2 font-serif text-xl leading-snug group-hover:text-primary">
                 {p.title}
               </h3>
@@ -266,6 +279,8 @@ function ArchiveSection() {
           ))}
         </div>
       )}
+
+      {visible.length > 0 && <AdSlot format="in-feed" slot={AD_SLOTS.feed} />}
 
       {pages > 1 && (
         <nav aria-label="Archive pages" className="mt-12 flex items-center justify-center gap-2">

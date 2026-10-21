@@ -1,26 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { about, brand, creators, images, spices } from "@/lib/data";
+import { buildHead } from "@/lib/seo";
 import { Reveal } from "@/components/site/Reveal";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({
-    meta: [
-      { title: "About Spice N Flavors — cooking is how we remember" },
-      {
-        name: "description",
-        content:
-          "Spice N Flavors is a place for Indian recipes that work, stories worth reading and food traditions worth passing on.",
-      },
-      { property: "og:title", content: "Cooking is how we remember — Spice N Flavors" },
-      {
-        property: "og:description",
-        content: "Recipes that work, stories worth reading and traditions worth passing on.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildHead({
+      title: "About — cooking is how we remember",
+      description:
+        "Spice N Flavors is a place for Indian recipes that work, stories worth reading and food traditions worth passing on.",
+      path: "/about",
+    }),
   component: AboutPage,
 });
 

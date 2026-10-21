@@ -37,3 +37,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local working files (source photos, screenshots, business docs — never commit)
+image*.png
+Screenshot*.png
+*.pdf

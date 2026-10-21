@@ -20,6 +20,39 @@ async function srv() {
 const COOKIE = "admin_session";
 const SESSION_DAYS = 7;
 
+/* Brute-force guard: max 8 failed logins per email per 10 minutes (per server instance). */
+const WINDOW_MS = 10 * 60_000;
+const MAX_ATTEMPTS = 8;
+const attempts = new Map<string, { count: number; first: number }>();
+
+function attemptKey(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function isRateLimited(email: string): boolean {
+  const rec = attempts.get(attemptKey(email));
+  if (!rec) return false;
+  if (Date.now() - rec.first > WINDOW_MS) {
+    attempts.delete(attemptKey(email));
+    return false;
+  }
+  return rec.count >= MAX_ATTEMPTS;
+}
+
+function recordFailure(email: string): void {
+  const key = attemptKey(email);
+  const rec = attempts.get(key);
+  if (!rec || Date.now() - rec.first > WINDOW_MS) {
+    attempts.set(key, { count: 1, first: Date.now() });
+  } else {
+    rec.count += 1;
+  }
+}
+
+function clearAttempts(email: string): void {
+  attempts.delete(attemptKey(email));
+}
+
 export type AdminUser = { id: string; email: string };
 
 async function userFromToken(token: string | undefined): Promise<AdminUser | null> {
@@ -66,21 +99,26 @@ export const loginFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => d as { email: string; password: string })
   .handler(async ({ data }) => {
     const email = data.email.trim().toLowerCase();
+    if (!email || !data.password) throw new Error("INVALID_CREDENTIALS");
+    if (isRateLimited(email)) throw new Error("RATE_LIMITED");
     const { getDb, users, sessions, verifyPassword, createHash, randomBytes, setCookie } =
       await srv();
     const { drizzle } = await getDb();
     const found = await drizzle.select().from(users).where(eq(users.email, email)).limit(1);
     const user = found[0] as
-      | { id: string; email: string; passSalt: string; passHash: string }
-      | undefined;
+      { id: string; email: string; passSalt: string; passHash: string } | undefined;
     if (!user || !verifyPassword(data.password, user.passSalt, user.passHash)) {
+      recordFailure(email);
       throw new Error("INVALID_CREDENTIALS");
     }
+    clearAttempts(email);
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000).toISOString();
-    await drizzle
-      .insert(sessions)
-      .values({ tokenHash: createHash("sha256").update(token).digest("hex"), userId: user.id, expiresAt });
+    await drizzle.insert(sessions).values({
+      tokenHash: createHash("sha256").update(token).digest("hex"),
+      userId: user.id,
+      expiresAt,
+    });
     setCookie(COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",

@@ -1,48 +1,46 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  ChefHat,
-  Clock,
-  Flame,
-  Play,
-  Replace,
-  Share2,
-  ShoppingBasket,
-  Timer,
-  Users,
-} from "lucide-react";
-import { creatorByHandle, recipeBySlug, recipes } from "@/lib/data";
+import { ChefHat, Play, Replace, Share2, ShoppingBasket } from "lucide-react";
+import { creatorByHandle } from "@/lib/data";
+import { getPublishedRecipeFn } from "@/lib/posts.api";
+import { legacyBySlug, legacyCover, legacyLive } from "@/lib/legacy";
+import { legacyCategory } from "@/lib/legacy-categories";
 import { SaveButton } from "@/components/site/SaveButton";
-import { RecipeCard } from "@/components/site/RecipeCard";
 import { Reveal } from "@/components/site/Reveal";
+import { CookingMode } from "@/components/site/CookingMode";
+import { AD_SLOTS, AdSlot, AffiliateBox } from "@/components/site/Monetization";
+import { buildHead, breadcrumbJsonLd, faqJsonLd, recipeJsonLd } from "@/lib/seo";
 import { useSaved } from "@/lib/saved";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/recipes/$slug")({
-  loader: ({ params }) => {
-    const recipe = recipeBySlug(params.slug);
-    if (!recipe) throw notFound();
-    return { recipe };
+  loader: async ({ params }) => {
+    // Old /recipes/<slug> links for recovered posts keep working.
+    if (legacyBySlug(params.slug)) {
+      throw redirect({ to: "/blog/$slug", params: { slug: params.slug } });
+    }
+    const fresh = await getPublishedRecipeFn({ data: { slug: params.slug } });
+    if (fresh) return { recipe: fresh };
+    throw notFound();
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return {
-        meta: [
-          { title: "Recipe unavailable — Spice N Flavors" },
-          { name: "robots", content: "noindex" },
-        ],
-      };
+      return buildHead({
+        title: "Recipe unavailable",
+        description: "This recipe could not be found.",
+        path: "/recipes",
+        noindex: true,
+      });
     }
     const { recipe } = loaderData;
-    const title = `${recipe.title} — ${recipe.cuisine} recipe | Spice N Flavors`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: recipe.blurb },
-        { property: "og:title", content: title },
-        { property: "og:description", content: recipe.blurb },
-      ],
-    };
+    return buildHead({
+      title: `${recipe.title} — ${recipe.cuisine} recipe`,
+      description: recipe.blurb,
+      path: `/recipes/${recipe.slug}`,
+      image: recipe.image,
+      type: "article",
+      keywords: [...recipe.tags, ...recipe.diet, recipe.cuisine, recipe.category].join(", "),
+    });
   },
   component: RecipePage,
 });
@@ -55,17 +53,60 @@ function RecipePage() {
   const { markViewed } = useSaved();
   const [scale, setScale] = useState(1);
   const [checked, setChecked] = useState<number[]>([]);
+  const [cookingOpen, setCookingOpen] = useState(false);
 
   useEffect(() => {
     markViewed(recipe.slug);
   }, [recipe.slug, markViewed]);
 
-  const related = recipes
-    .filter(
-      (r) =>
-        r.slug !== recipe.slug && (r.cuisine === recipe.cuisine || r.category === recipe.category),
-    )
-    .slice(0, 3);
+  const recipeLd = recipeJsonLd(recipe);
+  const faqLd = faqJsonLd(recipe.faqs);
+  // Blueprint §4 (L6): journal stories sharing the recipe's vocabulary keep
+  // readers moving between recipes and stories (substring match is too strict
+  // for cuisine names, so score word overlap like the blog rail does).
+  const journal = (() => {
+    const stop = new Set([
+      "with",
+      "from",
+      "that",
+      "this",
+      "your",
+      "recipe",
+      "recipes",
+      "easy",
+      "best",
+      "indian",
+    ]);
+    const words = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 4 && !stop.has(w));
+    const mine = new Set([
+      ...words(recipe.title),
+      ...words(recipe.cuisine),
+      ...words(recipe.category),
+      ...recipe.tags.flatMap(words),
+    ]);
+    return legacyLive
+      .map((p) => {
+        let score = 0;
+        for (const w of new Set([...words(p.title), ...p.tags.flatMap(words)])) {
+          if (mine.has(w)) score += w.length >= 6 ? 2 : 1;
+        }
+        return { p, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ p }) => p);
+  })();
+  const crumbsLd = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Recipes", path: "/recipes" },
+    { name: recipe.title, path: `/recipes/${recipe.slug}` },
+  ]);
 
   const fmt = (n: number) => {
     const v = n * scale;
@@ -74,76 +115,111 @@ function RecipePage() {
 
   return (
     <article className="pb-10">
-      {/* HERO */}
-      <div className={`${shell} pt-6`}>
-        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-          <div className="zoom-media overflow-hidden rounded-[2rem] border border-border lg:min-h-[58vh]">
-            <img
-              src={recipe.image}
-              alt={`${recipe.title} — ${recipe.cuisine}`}
-              className="size-full min-h-[18rem] object-cover"
-            />
-          </div>
-
-          <div className="flex flex-col justify-center lg:pl-4">
-            <p className="eyebrow">
-              {recipe.cuisine} · {recipe.category}
-            </p>
-            <h1 className="display-lg mt-4">{recipe.title}</h1>
-            <p className="mt-4 max-w-md leading-relaxed text-muted-foreground">{recipe.intro}</p>
-
-            {creator && (
+      {/* Structured data: Google Recipe Rich Results + FAQ + breadcrumbs. */}
+      <script type="application/ld+json">{JSON.stringify(recipeLd)}</script>
+      <script type="application/ld+json">{JSON.stringify(faqLd)}</script>
+      <script type="application/ld+json">{JSON.stringify(crumbsLd)}</script>
+      {/* HERO — dark editorial band */}
+      <div className="bg-[#1c1815] text-[#f3ede2] print:bg-white print:text-black">
+        <div className={`${shell} pb-10 pt-6`}>
+          <nav aria-label="Breadcrumb">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 print:text-black">
+              <Link to="/" className="hover:text-white">
+                Home
+              </Link>{" "}
+              /{" "}
               <Link
-                to="/creators/$handle"
-                params={{ handle: creator.handle }}
-                className="mt-6 flex w-fit items-center gap-3 rounded-full border border-border py-1.5 pl-1.5 pr-5 transition-colors hover:border-primary"
+                to="/recipes"
+                search={{ q: "", category: "All", sort: "relevance" }}
+                className="hover:text-white"
               >
-                <img
-                  src={creator.portrait}
-                  alt={creator.name}
-                  loading="lazy"
-                  className="size-10 rounded-full object-cover"
-                />
-                <span className="text-sm">
-                  <span className="block font-semibold">{creator.name}</span>
-                  <span className="block text-xs text-muted-foreground">{creator.specialty}</span>
-                </span>
-              </Link>
-            )}
+                Recipes
+              </Link>{" "}
+              / {recipe.cuisine} / {recipe.title}
+            </p>
+          </nav>
+          <div className="mt-8 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="min-w-0">
+              <h1 className="font-serif text-5xl leading-[1.02] tracking-tight sm:text-6xl">
+                {recipe.title}
+              </h1>
+              <p className="mt-4 max-w-md leading-relaxed text-white/70 print:text-black">
+                {recipe.intro}
+              </p>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {recipe.diet.map((d) => (
-                <span
-                  key={d}
-                  className="rounded-full bg-tea px-3 py-1.5 text-xs font-semibold text-accent-foreground"
+              {creator && (
+                <Link
+                  to="/creators/$handle"
+                  params={{ handle: creator.handle }}
+                  className="mt-6 flex w-fit items-center gap-3 rounded-full border border-white/20 py-1.5 pl-1.5 pr-5 transition-colors hover:border-white/60 print:border-border"
                 >
-                  {d}
-                </span>
-              ))}
+                  <img
+                    src={creator.portrait}
+                    alt={creator.name}
+                    loading="lazy"
+                    className="size-10 rounded-full object-cover"
+                  />
+                  <span className="text-sm">
+                    <span className="block font-semibold">{creator.name}</span>
+                    <span className="block text-xs text-white/60">{creator.specialty}</span>
+                  </span>
+                </Link>
+              )}
+
+              <dl className="mt-8 grid max-w-xl grid-cols-3 gap-6 border-t border-white/15 pt-6 sm:grid-cols-5 print:border-border">
+                <HeroMeta label="Prep" value={`${recipe.prep}m`} />
+                <HeroMeta label="Cook" value={`${recipe.cook}m`} />
+                <HeroMeta label="Total" value={`${recipe.minutes}m`} />
+                <HeroMeta label="Serves" value={String(recipe.servings)} />
+                <HeroMeta label="Level" value={recipe.difficulty} />
+              </dl>
+
+              <div className="mt-8 flex flex-wrap gap-3 print:hidden">
+                <SaveButton slug={recipe.slug} label className="px-5 py-3 text-sm" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      void navigator.share({ title: recipe.title, url: window.location.href });
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold transition-colors hover:border-white/60"
+                >
+                  <Share2 className="size-4" strokeWidth={1.6} />
+                  Share
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold transition-colors hover:border-white/60"
+                >
+                  Print
+                </button>
+                <a
+                  href="#recipe"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold transition-colors hover:border-white/60"
+                >
+                  Jump to recipe
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setCookingOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#c96f4a] px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-[#b25f3d] active:scale-95"
+                >
+                  <ChefHat className="size-4" strokeWidth={1.8} />
+                  Cooking mode
+                </button>
+              </div>
             </div>
 
-            <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-5">
-              <Meta icon={Timer} label="Prep" value={`${recipe.prep} min`} />
-              <Meta icon={Clock} label="Cook" value={`${recipe.cook} min`} />
-              <Meta icon={Clock} label="Total" value={`${recipe.minutes} min`} />
-              <Meta icon={Users} label="Serves" value={String(recipe.servings)} />
-              <Meta icon={Flame} label="Level" value={recipe.difficulty} />
-            </dl>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <SaveButton slug={recipe.slug} label className="px-5 py-3 text-sm" />
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof navigator !== "undefined" && navigator.share) {
-                    void navigator.share({ title: recipe.title, url: window.location.href });
-                  }
-                }}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 text-sm font-semibold transition-colors hover:border-primary hover:bg-secondary"
-              >
-                <Share2 className="size-4" strokeWidth={1.6} />
-                Share
-              </button>
+            <div className="zoom-media overflow-hidden rounded-[2rem]">
+              <img
+                src={recipe.image}
+                alt={`${recipe.title} — ${recipe.cuisine}`}
+                fetchPriority="high"
+                decoding="async"
+                className="aspect-4/3 w-full object-cover lg:aspect-4/5"
+              />
             </div>
           </div>
         </div>
@@ -201,9 +277,15 @@ function RecipePage() {
                         className="size-4 shrink-0 accent-primary"
                       />
                       <span className={cn("min-w-0", done && "text-muted-foreground line-through")}>
-                        <span className="font-semibold">
-                          {fmt(ing.qty)} {ing.unit}
-                        </span>{" "}
+                        {ing.qty > 0 || ing.unit ? (
+                          <>
+                            <span className="font-semibold">
+                              {[ing.qty > 0 ? fmt(ing.qty) : "", ing.unit]
+                                .filter(Boolean)
+                                .join(" ")}
+                            </span>{" "}
+                          </>
+                        ) : null}
                         {ing.name}
                       </span>
                     </label>
@@ -275,7 +357,7 @@ function RecipePage() {
         </div>
 
         {/* right column: instructions */}
-        <Reveal as="section" className="lg:pl-6">
+        <Reveal as="section" id="recipe" className="scroll-mt-24 lg:pl-6">
           <h2 className="display-md">Instructions</h2>
           <ol className="mt-8 space-y-8">
             {recipe.steps.map((step, i) => (
@@ -296,6 +378,12 @@ function RecipePage() {
         </Reveal>
       </div>
 
+      {/* MONETIZATION — high-viewability in-article zone + affiliate picks. */}
+      <div className={`${shell} mt-16`}>
+        <AdSlot format="in-article" slot={AD_SLOTS.article} />
+        <AffiliateBox />
+      </div>
+
       {/* FAQ */}
       <Reveal as="section" className="mt-24 bg-secondary/60 py-16">
         <div className={shell}>
@@ -311,29 +399,66 @@ function RecipePage() {
         </div>
       </Reveal>
 
-      {/* RELATED */}
-      {related.length > 0 && (
+      {/* FROM THE JOURNAL — same-cuisine stories */}
+      {journal.length > 0 && (
         <Reveal as="section" className={`${shell} mt-20`}>
-          <h2 className="display-lg">Cook this next</h2>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 className="display-lg">From the journal</h2>
+            <Link to="/blog" className="text-sm font-semibold text-primary hover:underline">
+              All stories →
+            </Link>
+          </div>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {related.map((r) => (
-              <RecipeCard key={r.slug} recipe={r} size="sm" />
+            {journal.map((p) => (
+              <Link
+                key={p.slug}
+                to="/blog/$slug"
+                params={{ slug: p.slug }}
+                className="lift group block overflow-hidden rounded-2xl border border-border bg-secondary/40"
+              >
+                <div className="zoom-media aspect-16/10">
+                  <img
+                    src={legacyCover(p)}
+                    alt={p.title}
+                    loading="lazy"
+                    className="size-full object-cover"
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {legacyCategory(p) || "Recipe"}
+                  </p>
+                  <p className="mt-1 font-serif text-lg leading-snug group-hover:text-primary">
+                    {p.title}
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
         </Reveal>
       )}
+
+      <CookingMode
+        title={recipe.title}
+        steps={recipe.steps}
+        ingredients={recipe.ingredients.map((i) => ({
+          name: i.name,
+          qty: `${fmt(i.qty)} ${i.unit}`.trim(),
+        }))}
+        open={cookingOpen}
+        onClose={() => setCookingOpen(false)}
+      />
     </article>
   );
 }
 
-function Meta({ icon: Icon, label, value }: { icon: typeof Clock; label: string; value: string }) {
+function HeroMeta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-background px-4 py-4">
-      <dt className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-        <Icon className="size-3.5" strokeWidth={1.6} />
+    <div>
+      <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
         {label}
       </dt>
-      <dd className="mt-1.5 text-sm font-semibold">{value}</dd>
+      <dd className="mt-1.5 font-serif text-xl">{value}</dd>
     </div>
   );
 }

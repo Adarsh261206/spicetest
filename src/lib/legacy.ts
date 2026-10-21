@@ -118,6 +118,109 @@ function balanceInline(s: string): string {
   return out;
 }
 
+/* ------------------------------------------------------------------ */
+/* Step repair: old Blogger posts wrap sentences mid-way across <br>   */
+/* lines, so one step's text lands in two list items ("…then close" /  */
+/* "lid and turn on…"). Rejoin those, and split method steps that got  */
+/* swallowed by an Ingredients list back out under a Method heading.   */
+/* ------------------------------------------------------------------ */
+
+/** Words that can never end a sentence — a lowercase line after one continues it. */
+const CONT_END_WORD =
+  /\b(the|a|an|of|and|or|with|to|in|on|for|from|into|at|by|then|well|about|over|under|between|through|using|use|add|mix|stir|combine|heat|pour|place|put|keep|allow|continue|your|its|their|this|that|these|those|some|any|no|not|very|more|most|less|least|than|as|so|if|when|while|after|before|until|till|cut)$/i;
+
+/** Next line opens with a connective — clearly the same sentence. */
+const CONT_START_WORD =
+  /^(with|and|or|to|in|on|for|from|into|at|by|then|until|till|using|use|over|under)\b/i;
+
+/** First-word verbs that start a method step (past participles don't count). */
+const STEP_VERBS = new Set([
+  "add",
+  "heat",
+  "mix",
+  "mash",
+  "stir",
+  "cook",
+  "bake",
+  "boil",
+  "fry",
+  "roast",
+  "chop",
+  "grind",
+  "pour",
+  "serve",
+  "garnish",
+  "whisk",
+  "blend",
+  "simmer",
+  "steam",
+  "marinate",
+  "toss",
+  "sprinkle",
+  "drain",
+  "soak",
+  "knead",
+  "roll",
+  "slice",
+  "dice",
+  "mince",
+  "saute",
+  "temper",
+  "preheat",
+  "grease",
+  "fold",
+  "beat",
+  "combine",
+  "transfer",
+  "cover",
+  "reduce",
+  "cool",
+  "rinse",
+  "peel",
+  "grate",
+  "squeeze",
+]);
+
+const STEP_CONNECTOR = /^(first|next|then|now|finally|after that|once)\b[, ]/i;
+
+/** "1. Wash the meat" / "Heat the oil" / "In a bowl, mix…" / "For the pie crust, using…" */
+function looksLikeStep(text: string): boolean {
+  if (/^\d+[.)]\s+\S/.test(text)) return true;
+  if (/^for the [a-z ]+,/i.test(text)) return true;
+  if (STEP_CONNECTOR.test(text)) return true;
+  if (/^in (a|an|the) /i.test(text)) return true;
+  const first =
+    text
+      .toLowerCase()
+      .split(/\s+/)[0]
+      ?.replace(/[^a-z]/g, "") ?? "";
+  return STEP_VERBS.has(first);
+}
+
+/** Short plain label inside a method run ("Marinate:", "Serving soup:"). */
+function isMiniLabel(text: string): boolean {
+  return /^[A-Za-z][^.!?]{0,50}:$/.test(text);
+}
+
+/**
+ * True when `next` is the wrapped remainder of `prev` (not a new item).
+ * Strict in ingredient lists; length-based rules only in method lists.
+ */
+function isContinuationLine(prevText: string, nextText: string, mode: "ul" | "ol"): boolean {
+  if (!prevText || !nextText) return false;
+  if (/[.!?:;)\]"'”’]\s*$/.test(prevText)) return false;
+  if (!/^[a-z(]/.test(nextText)) return false;
+  if (/^\d+[.)\]}]\s/.test(nextText)) return false;
+  if (/[,;]\s*$/.test(prevText)) return true;
+  if (CONT_END_WORD.test(prevText)) return true;
+  if (CONT_START_WORD.test(nextText)) return true;
+  if (mode === "ol") {
+    if (prevText.length >= 40) return true;
+    if (nextText.length >= 50 && prevText.length >= 12) return true;
+  }
+  return false;
+}
+
 /**
  * Normalize one imported post into clean article HTML.
  * - caption tables / image separators -> <figure>
@@ -193,12 +296,19 @@ export function legacyBody(post: LegacyPost): string {
   const out: string[] = [];
   let list: ListMode = null;
   let listOpen = false;
+  /** Which heading opened the current list (drives the Method split + joins). */
+  let headingKind: "ingredients" | "method" | "other" | null = null;
+  /** Kind of the last real <h3> pushed — avoids duplicate synthetic Method h3s. */
+  let lastH3Kind: "ingredients" | "method" | "other" | null = null;
+  /** Plain text of the last <li> pushed — continuation joins append to it. */
+  let lastLiText: string | null = null;
   const closeList = () => {
     if (listOpen) {
       out.push(list === "ul" ? "</ul>" : "</ol>");
       listOpen = false;
     }
     list = null;
+    lastLiText = null;
   };
 
   // Drop the cover (already shown in the hero) wherever it appears in the
@@ -239,34 +349,73 @@ export function legacyBody(post: LegacyPost): string {
     if (!text) continue;
 
     const bold = boldOnlyText(line);
+    // Plain section labels: "Ingredients", "Ingredients:", "Method;",
+    // "Method for marinade". Digits excluded so "Ingredients: 2 cups" is not
+    // mistaken for a heading.
     const plainSection =
-      /^(ingredients|method|preparation|procedure|directions|instructions)\s*:?$/i.test(text);
+      /^(ingredients?|method|preparation|procedure|directions?|instructions?|how to make)\b[a-zA-Z\s&,':;-]{0,30}$/i.test(
+        text,
+      ) && text.length <= 45;
     const label = (
       bold && bold.length <= 90 && /[a-zA-Z]/.test(bold) ? bold : plainSection ? text : ""
-    ).replace(/:$/, "");
+    ).replace(/[;:]\s*$/, "");
     if (label) {
       closeList();
       if (INGRED_WORDS.test(label)) {
         out.push(`<h3>${label}</h3>`);
         list = "ul";
+        headingKind = "ingredients";
+        lastH3Kind = "ingredients";
       } else if (METHOD_WORDS.test(label) || plainSection) {
         out.push(`<h3>${label}</h3>`);
         list = "ol";
+        headingKind = "method";
+        lastH3Kind = "method";
       } else {
         out.push(`<h4>${label}</h4>`);
         list = "ul";
+        headingKind = "other";
       }
       continue;
     }
     if (list && text.length <= LIST_ITEM_MAX) {
+      // Old posts sometimes keep the whole method inside the Ingredients
+      // list — or after a bold sub-label like "For making the broth" — with
+      // no Method heading. The first real step starts a Method run (once per
+      // section: a later run inside the same section just continues it).
+      if (headingKind !== "method" && looksLikeStep(text)) {
+        closeList();
+        if (lastH3Kind !== "method") {
+          out.push(`<h3>Method</h3>`);
+          lastH3Kind = "method";
+        }
+        list = "ol";
+        headingKind = "method";
+      }
+      // Plain sub-labels inside a method run ("Marinate:", "Serving soup:").
+      if (headingKind === "method" && isMiniLabel(text)) continue;
       if (!listOpen) {
         out.push(list === "ul" ? "<ul>" : "<ol>");
         listOpen = true;
       }
+      const numbered = /^(?:<[^>]+>)*\d+[.)\]}]\s*/.test(line);
       const item = balanceInline(
         list === "ol" ? line.replace(/^(?:<[^>]+>)*\d+[.)\]}]\s*/, "") : line,
       );
+      // Wrapped-sentence repair: append to the previous item when this line
+      // is clearly the same sentence continuing (not a new step/item).
+      if (
+        lastLiText !== null &&
+        !numbered &&
+        isContinuationLine(lastLiText, text, list) &&
+        out[out.length - 1]?.endsWith("</li>")
+      ) {
+        out[out.length - 1] = out[out.length - 1]!.replace(/<\/li>$/, ` ${item}</li>`);
+        lastLiText = `${lastLiText} ${text}`.replace(/\s+/g, " ");
+        continue;
+      }
       out.push(`<li>${item}</li>`);
+      lastLiText = text;
       continue;
     }
 

@@ -9,14 +9,20 @@ import {
   cuisines,
   diets,
   difficulties,
-  recipes,
   collections,
+  type Recipe,
 } from "@/lib/data";
 import { RecipeCard } from "@/components/site/RecipeCard";
+import { LegacyCard } from "@/components/site/LegacyCard";
 import { CategoryRail } from "@/components/site/CategoryRail";
 import { CreatorCard } from "@/components/site/CreatorCard";
 import { CollectionCard } from "@/components/site/CollectionCard";
+import { legacyCover, legacyPosts, type LegacyPost } from "@/lib/legacy";
+import { listPublishedRecipesFn } from "@/lib/posts.api";
+import { AD_SLOTS, AdSlot } from "@/components/site/Monetization";
+import { legacyCategory } from "@/lib/legacy-categories";
 import { cn } from "@/lib/utils";
+import { buildHead, itemListJsonLd } from "@/lib/seo";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -26,30 +32,24 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/recipes/")({
   validateSearch: zodValidator(searchSchema),
-  head: () => ({
-    meta: [
-      { title: "Search Indian recipes, ingredients and cuisines — Spice N Flavors" },
-      {
-        name: "description",
-        content:
-          "Search the Spice N Flavors library by diet, cooking time, difficulty, region and ingredient.",
-      },
-      { property: "og:title", content: "What are you craving? — Spice N Flavors" },
-      {
-        property: "og:description",
-        content:
-          "Filter Indian and continental recipes by diet, time, difficulty, region and ingredient.",
-      },
-    ],
-  }),
+  // Recipes published through the admin studio, merged with the recovered archive.
+  loader: async () => ({ dbRecipes: await listPublishedRecipesFn() }),
+  head: () =>
+    buildHead({
+      title: "Search Indian recipes by ingredient and cuisine",
+      description:
+        "Search the Spice N Flavors library by diet, cooking time, difficulty, region and ingredient.",
+      path: "/recipes",
+    }),
   component: RecipesPage,
 });
 
 const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
-const tabs = ["Recipes", "Ingredients", "Cuisines", "Creators", "Collections"] as const;
+const tabs = ["Recipes", "Cuisines", "Creators", "Collections"] as const;
 
 function RecipesPage() {
   const { q, category, sort } = Route.useSearch();
+  const { dbRecipes } = Route.useLoaderData();
   const navigate = useNavigate({ from: "/recipes/" });
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Recipes");
@@ -64,8 +64,10 @@ function RecipesPage() {
 
   const term = q.trim().toLowerCase().slice(0, 100);
 
+  const allRecipes: (Recipe & { date?: string })[] = useMemo(() => dbRecipes, [dbRecipes]);
+
   const results = useMemo(() => {
-    let out = recipes.filter((r) => {
+    let out = allRecipes.filter((r) => {
       const haystack = [
         r.title,
         r.blurb,
@@ -93,24 +95,62 @@ function RecipesPage() {
     if (sort === "a-z") out = [...out].sort((a, b) => a.title.localeCompare(b.title));
     if (sort === "slow-cooks") out = [...out].sort((a, b) => b.minutes - a.minutes);
     return out;
-  }, [term, category, diet, difficulty, cuisine, maxTime, sort]);
+  }, [term, category, diet, difficulty, cuisine, maxTime, sort, allRecipes]);
+
+  // The recovered archive is the heart of the listing — text/category/cuisine match.
+  const archiveMatches = useMemo(() => {
+    const words = term.split(/\s+/).filter(Boolean);
+    const out = legacyPosts.filter((p) => {
+      // Draft recoveries are review-only: reachable by URL, never listed.
+      if (p.draft) return false;
+      const cat = legacyCategory(p);
+      if (category !== "All" && !(cat === category || p.tags.includes(category))) return false;
+      if (
+        cuisine.length > 0 &&
+        !cuisine.some(
+          (c) => p.tags.includes(c) || cat === c || p.title.toLowerCase().includes(c.toLowerCase()),
+        )
+      )
+        return false;
+      if (words.length === 0) return true;
+      const hay = [p.title, p.category, p.excerpt, ...p.tags].join(" ").toLowerCase();
+      return words.every((w) => hay.includes(w));
+    });
+    if (sort === "a-z") out.sort((a, b) => a.title.localeCompare(b.title));
+    return out;
+  }, [term, category, cuisine, sort]);
 
   const creatorResults = creators.filter((c) =>
     (c.name + c.specialty + c.location).toLowerCase().includes(term),
   );
   const collectionResults = collections.filter((c) => c.name.toLowerCase().includes(term));
   const cuisineResults = cuisines.filter((c) => c.toLowerCase().includes(term));
-  const ingredientResults = Array.from(
-    new Set(recipes.flatMap((r) => r.ingredients.map((i) => i.name.split(",")[0]!))),
-  ).filter((i) => i.toLowerCase().includes(term));
 
   const setSearch = (patch: Partial<{ q: string; category: string; sort: string }>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }) });
 
   const activeFilters = diet.length + difficulty.length + cuisine.length + (maxTime < 120 ? 1 : 0);
 
+  // Blueprint §2 (R5): ItemList of the lead results (unfiltered view only).
+  const listLd =
+    tab === "Recipes" && !term
+      ? itemListJsonLd("/recipes", [
+          ...results.slice(0, 12).map((r) => ({
+            name: r.title,
+            path: `/recipes/${r.slug}`,
+            image: r.image,
+          })),
+          ...archiveMatches.slice(0, 12).map((p) => ({
+            name: p.title,
+            path: `/blog/${p.slug}`,
+            image: legacyCover(p),
+          })),
+        ])
+      : null;
+
   return (
     <div className={`${shell} pb-16 pt-8`}>
+      {listLd && <script type="application/ld+json">{JSON.stringify(listLd)}</script>}
       <header className="max-w-2xl">
         <p className="eyebrow">Search</p>
         <h1 className="display-lg mt-3">Find your next thing to cook.</h1>
@@ -234,10 +274,12 @@ function RecipesPage() {
                 items={categories}
                 value={category}
                 onChange={(v) => setSearch({ category: v })}
+                hrefFor={(c) => `/recipes?category=${encodeURIComponent(c)}`}
               />
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                 <p className="text-sm text-muted-foreground">
-                  {results.length} {results.length === 1 ? "recipe" : "recipes"}
+                  {results.length + archiveMatches.length}{" "}
+                  {results.length + archiveMatches.length === 1 ? "recipe" : "recipes"}
                   {term && <> for “{term}”</>}
                 </p>
                 <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -255,16 +297,22 @@ function RecipesPage() {
                 </label>
               </div>
 
-              {results.length === 0 ? (
+              {results.length === 0 && archiveMatches.length === 0 ? (
                 <p className="py-16 text-center text-muted-foreground">
                   Nothing matched. Try loosening a filter.
                 </p>
               ) : (
-                <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {results.map((r, i) => (
-                    <RecipeCard key={r.slug} recipe={r} size={i % 5 === 0 ? "md" : "sm"} />
-                  ))}
-                </div>
+                <>
+                  <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {results.map((r, i) => (
+                      <RecipeCard key={r.slug} recipe={r} size={i % 5 === 0 ? "md" : "sm"} />
+                    ))}
+                    <ArchiveCards items={archiveMatches} />
+                  </div>
+                  {(results.length > 0 || archiveMatches.length > 0) && (
+                    <AdSlot format="in-feed" slot={AD_SLOTS.feed} />
+                  )}
+                </>
               )}
             </>
           )}
@@ -285,9 +333,9 @@ function RecipesPage() {
             </div>
           )}
 
-          {(tab === "Cuisines" || tab === "Ingredients") && (
+          {tab === "Cuisines" && (
             <ul className="flex flex-wrap gap-2">
-              {(tab === "Cuisines" ? cuisineResults : ingredientResults).map((item) => (
+              {cuisineResults.map((item) => (
                 <li key={item}>
                   <button
                     type="button"
@@ -306,6 +354,29 @@ function RecipesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ArchiveCards({ items }: { items: LegacyPost[] }) {
+  const [visible, setVisible] = useState(24);
+  const shown = items.slice(0, visible);
+  return (
+    <>
+      {shown.map((p) => (
+        <LegacyCard key={p.slug} post={p} size="sm" />
+      ))}
+      {visible < items.length && (
+        <div className="col-span-full mt-2 text-center">
+          <button
+            type="button"
+            onClick={() => setVisible((v) => v + 24)}
+            className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition-colors hover:border-primary hover:bg-secondary"
+          >
+            Show more ({items.length - visible} remaining)
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 

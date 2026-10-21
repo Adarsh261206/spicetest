@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { meFn } from "@/lib/auth.api";
 import { adminGetPostFn } from "@/lib/posts.api";
+import { buildHead } from "@/lib/seo";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PostEditor } from "@/components/admin/PostEditor";
 
@@ -12,6 +13,13 @@ export const Route = createFileRoute("/admin/posts/$postId")({
     if (!post) throw redirect({ to: "/admin" });
     return { post };
   },
+  head: () =>
+    buildHead({
+      title: "Admin — edit post",
+      description: "Spice N Flavors content studio.",
+      path: "/admin",
+      noindex: true,
+    }),
   component: EditPost,
 });
 

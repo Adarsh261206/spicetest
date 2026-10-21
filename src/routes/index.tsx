@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, Clock, Flame, Search, Users } from "lucide-react";
+import { ArrowRight, ChefHat, Flame, ListChecks, Search, Timer, Users } from "lucide-react";
+import heroOne from "@/assets/hero-1.jpg";
+import heroTwo from "@/assets/hero-2.jpg";
 import {
   about,
   articles,
@@ -8,56 +10,84 @@ import {
   categories,
   cuisineRegions,
   featuredArticle,
-  featuredRecipe,
   popularSearches,
   quickFilters,
-  recipes,
-  spices,
 } from "@/lib/data";
+import { formatLegacyDate, legacyBySlug, legacyCover, legacyLive } from "@/lib/legacy";
+import { legacyCategory } from "@/lib/legacy-categories";
 import { listPublishedPostsFn } from "@/lib/posts.api";
 import type { DbPostPublic } from "@/lib/blocks";
-import { formatLegacyDate } from "@/lib/legacy";
-import { RecipeCard } from "@/components/site/RecipeCard";
+import { LegacyCard, cleanExcerpt } from "@/components/site/LegacyCard";
 import { CategoryRail } from "@/components/site/CategoryRail";
 import { Reveal } from "@/components/site/Reveal";
+import { buildHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   loader: async () => ({ fresh: await listPublishedPostsFn() }),
-  head: () => ({
-    meta: [
-      { title: "Spice N Flavors — A world of flavor" },
-      {
-        name: "description",
-        content:
-          "Indian recipes that work, cooking techniques worth learning and food stories worth reading — from biryani and butter chicken to everyday vegetarian cooking.",
-      },
-      { property: "og:title", content: "Spice N Flavors — A world of flavor" },
-      {
-        property: "og:description",
-        content: "Recipes, stories and traditions worth bringing to the table.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildHead({
+      title: "Indian recipes that work — from biryani to everyday cooking",
+      description:
+        "Indian recipes that work, cooking techniques worth learning and food stories worth reading — from biryani to everyday vegetarian cooking.",
+      path: "/",
+    }),
   component: Home,
 });
 
 const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
+
+/** Rotating sticker seal over the hero photo. */
+function SealBadge() {
+  return (
+    <div className="absolute -left-4 -top-5 z-10 hidden size-28 place-items-center rounded-full bg-ink text-[#f3ede2] shadow-[var(--shadow-float)] lg:grid">
+      <svg viewBox="0 0 100 100" className="spin-slow absolute inset-0 size-full">
+        <defs>
+          <path id="seal-path" d="M 50,50 m -37,0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" />
+        </defs>
+        <text className="fill-[#f3ede2]/85 text-[8.6px] font-semibold tracking-[0.24em] uppercase">
+          <textPath href="#seal-path">Recipes • Stories • Traditions • </textPath>
+        </text>
+      </svg>
+      <span className="font-serif text-2xl leading-none text-saffron">✦</span>
+    </div>
+  );
+}
+
+/** Dish-name ticker strip — keeps the page feeling alive between sections. */
+function DishTicker() {
+  const names = legacyLive.slice(0, 14).map((p) => p.title);
+  return (
+    <section aria-hidden className="overflow-hidden border-y border-border bg-vanilla/60 py-6">
+      <div className="marquee-track">
+        {[0, 1].map((dup) => (
+          <div key={dup} className="flex shrink-0 items-center">
+            {names.map((n) => (
+              <span
+                key={`${dup}-${n}`}
+                className="flex items-center gap-7 whitespace-nowrap px-7 font-serif text-2xl italic text-foreground/75 sm:text-3xl"
+              >
+                {n}
+                <span className="text-sm not-italic text-primary">✦</span>
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** The featured post — a real recipe from the blog archive. */
+const FEATURED_POST = legacyBySlug("dal-makhani") ?? legacyLive[0]!;
 
 function Home() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
 
-  const filtered =
-    category === "All"
-      ? recipes
-      : recipes.filter(
-          (r) => r.category === category || r.tags.includes(category) || r.diet.includes(category),
-        );
-  const grid = (filtered.length ? filtered : recipes).slice(0, 7);
-  const [gridFeature, ...rest] = grid;
+  // Category rail still filters the /recipes search; the grid below always
+  // shows the real archive.
+  const grid = legacyLive.slice(0, 6);
 
   const go = (q: string) =>
     navigate({ to: "/recipes", search: { q, category: "All", sort: "relevance" } });
@@ -66,14 +96,19 @@ function Home() {
     <>
       {/* HERO */}
       <section className="relative overflow-hidden pb-16 pt-6 sm:pt-10 lg:pb-24">
-        <div
+        <div aria-hidden className="hero-wash pointer-events-none absolute inset-0" />
+        <span
           aria-hidden
-          className="pointer-events-none absolute -right-40 top-10 size-[520px] rounded-full bg-tea/45 blur-[2px]"
-        />
-        <div
+          className="pointer-events-none absolute right-[8%] top-16 hidden font-serif text-2xl text-saffron lg:block"
+        >
+          ✦
+        </span>
+        <span
           aria-hidden
-          className="pointer-events-none absolute left-[42%] top-[62%] hidden size-40 rounded-full bg-vanilla lg:block"
-        />
+          className="pointer-events-none absolute left-[46%] top-[70%] hidden text-sm text-primary/70 lg:block"
+        >
+          ✦
+        </span>
         <div
           className={`${shell} relative grid gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:items-center`}
         >
@@ -81,7 +116,9 @@ function Home() {
             <p className="eyebrow">{brand.hero.eyebrow}</p>
             <h1 className="display-xl mt-5">
               A world of
-              <span className="block italic text-primary">flavor.</span>
+              <span className="block italic text-primary">
+                <span className="ink-mark">flavor.</span>
+              </span>
             </h1>
             <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
               {brand.hero.support}
@@ -100,7 +137,8 @@ function Home() {
                 />
               </Link>
               <Link
-                to="/blog"
+                to="/recipes"
+                search={{ q: "", category: "All", sort: "relevance" }}
                 className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-semibold transition-colors duration-200 hover:border-primary hover:bg-vanilla"
               >
                 {brand.hero.secondaryCta}
@@ -147,44 +185,49 @@ function Home() {
                 </Link>
               ))}
             </div>
+
+            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Flame className="size-3.5 text-ember" strokeWidth={1.8} /> 160+ recipes
+              </span>
+              <span aria-hidden className="text-border-strong">
+                ·
+              </span>
+              <span>12 cuisines</span>
+              <span aria-hidden className="text-border-strong">
+                ·
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="size-3.5" strokeWidth={1.8} /> One kitchen since 2012
+              </span>
+            </p>
           </div>
 
           {/* Editorial composition */}
           <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
+            <SealBadge />
             <div className="zoom-media overflow-hidden rounded-[2rem] border border-border">
               <img
-                src={featuredRecipe.image}
-                alt="Charred chicken tikka skewers with mint chutney and lime"
-                width={1200}
-                height={1504}
+                src={heroOne}
+                alt="A freshly cooked dish from the Spice N Flavors kitchen"
+                width={900}
+                height={1200}
+                fetchPriority="high"
+                decoding="async"
                 className="aspect-4/5 w-full object-cover"
               />
             </div>
 
-            <div className="zoom-media absolute -bottom-8 -left-4 w-36 overflow-hidden rounded-2xl border border-border sm:-left-10 sm:w-52">
+            <div className="zoom-media absolute -bottom-8 -left-4 w-44 overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-float)] sm:-left-10 sm:w-60">
               <img
-                src={spices.find((s) => s.name === "Red Chilli")?.image ?? spices[0]!.image}
-                alt="Whole dried red chillies and warm spices in small bowls"
+                src={heroTwo}
+                alt="Fresh cooking from the Spice N Flavors kitchen"
+                width={800}
+                height={600}
                 loading="lazy"
-                className="aspect-3/4 w-full object-cover"
+                decoding="async"
+                className="aspect-4/3 w-full object-cover"
               />
-            </div>
-
-            <div className="absolute -right-2 top-8 w-56 rounded-2xl border border-border bg-background/92 p-4 backdrop-blur sm:right-[-2.5rem]">
-              <p className="eyebrow">Cooking now</p>
-              <p className="mt-2 font-serif text-lg leading-snug">{featuredRecipe.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {featuredRecipe.cuisine} · {featuredRecipe.category}
-              </p>
-              <div className="mt-3 flex items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="size-3.5" strokeWidth={1.6} /> {featuredRecipe.minutes} min
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Flame className="size-3.5 text-primary" strokeWidth={1.6} />
-                  {featuredRecipe.difficulty}
-                </span>
-              </div>
             </div>
 
             <div
@@ -195,36 +238,34 @@ function Home() {
         </div>
       </section>
 
+      <DishTicker />
+
       {/* FEATURED RECIPE */}
       <Reveal as="section" className="mt-20 bg-vanilla py-16 sm:py-24">
         <div className={`${shell} grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]`}>
           <div className="zoom-media order-2 overflow-hidden rounded-[2rem] border border-border lg:order-1">
             <img
-              src={featuredRecipe.image}
-              alt={`${featuredRecipe.title} charred at the edges with fresh coriander`}
+              src={legacyCover(FEATURED_POST)}
+              alt={FEATURED_POST.title}
               loading="lazy"
               className="aspect-5/4 w-full object-cover"
             />
           </div>
           <div className="order-1 max-w-lg lg:order-2 lg:pl-6">
             <p className="eyebrow">Featured recipe</p>
-            <h2 className="display-lg mt-4">{featuredRecipe.title}</h2>
-            <p className="mt-6 leading-relaxed">{featuredRecipe.intro}</p>
-            <dl className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-4">
-              <Fact label="Prep" value={`${featuredRecipe.prep} min`} />
-              <Fact label="Cook" value={`${featuredRecipe.cook} min`} />
-              <Fact label="Serves" value={String(featuredRecipe.servings)} />
-              <Fact label="Diet" value={featuredRecipe.diet[0]!} />
+            <h2 className="display-lg mt-4">{FEATURED_POST.title}</h2>
+            <p className="mt-6 leading-relaxed">{cleanExcerpt(FEATURED_POST.excerpt)}</p>
+            <dl className="mt-8 grid grid-cols-3 gap-6">
+              <Fact label="Type" value={legacyCategory(FEATURED_POST) || "Recipe"} />
+              <Fact label="Read" value={`${FEATURED_POST.readingTime} min`} />
+              <Fact label="Added" value={formatLegacyDate(FEATURED_POST.date) || "—"} />
             </dl>
-            <p className="mt-6 text-sm text-muted-foreground">
-              {featuredRecipe.cuisine} · {featuredRecipe.category}
-            </p>
             <Link
-              to="/recipes/$slug"
-              params={{ slug: featuredRecipe.slug }}
+              to="/blog/$slug"
+              params={{ slug: FEATURED_POST.slug }}
               className="group mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-deep active:scale-95"
             >
-              View Recipe
+              Read the recipe
               <ArrowRight
                 className="size-4 transition-transform duration-200 group-hover:translate-x-1"
                 strokeWidth={1.8}
@@ -267,27 +308,27 @@ function Home() {
         </div>
       </Reveal>
 
-      {/* EDITORIAL GRID */}
+      {/* EDITORIAL GRID — real archive recipes */}
       <section className={`${shell} mt-10`}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Reveal className="lg:col-span-2">
-            {gridFeature && <RecipeCard recipe={gridFeature} size="lg" eager />}
-          </Reveal>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
-            {rest.slice(0, 2).map((r, i) => (
-              <Reveal key={r.slug} delay={i * 80}>
-                <RecipeCard recipe={r} size="sm" />
-              </Reveal>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {rest.slice(2, 6).map((r, i) => (
-            <Reveal key={r.slug} delay={i * 70} className={i === 1 || i === 3 ? "lg:mt-10" : ""}>
-              <RecipeCard recipe={r} />
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {grid.map((p, i) => (
+            <Reveal key={p.slug} delay={i * 70} className={i === 1 || i === 4 ? "lg:mt-10" : ""}>
+              <LegacyCard post={p} />
             </Reveal>
           ))}
+        </div>
+        <div className="mt-10 text-center">
+          <Link
+            to="/recipes"
+            search={{ q: "", category: "All", sort: "relevance" }}
+            className="group inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-semibold transition-colors duration-200 hover:border-primary hover:bg-vanilla"
+          >
+            Browse all {legacyLive.length} recipes
+            <ArrowRight
+              className="size-4 transition-transform duration-200 group-hover:translate-x-1"
+              strokeWidth={1.8}
+            />
+          </Link>
         </div>
       </section>
 
@@ -338,18 +379,79 @@ function Home() {
         </div>
       </Reveal>
 
+      {/* COOKING MODE — dark editorial band for contrast */}
+      <Reveal as="section" className="mt-24 bg-ink py-16 text-[#f3ede2] sm:py-20">
+        <div className={`${shell} grid items-center gap-12 lg:grid-cols-[1fr_auto]`}>
+          <div className="max-w-2xl">
+            <p className="eyebrow-light">Cooking mode</p>
+            <h2 className="display-lg mt-4 text-[#f8f4ea]">
+              Cook hands-free, <span className="italic text-saffron">step by step.</span>
+            </h2>
+            <p className="mt-5 max-w-xl leading-relaxed text-[#f3ede2]/70">
+              Full-screen steps, built-in timers and an ingredient checklist — flour on your hands,
+              phone on the counter, recipe still readable.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/blog/$slug"
+                params={{ slug: FEATURED_POST.slug }}
+                className="btn-shine inline-flex items-center gap-2 rounded-full bg-ember px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-95"
+              >
+                <ChefHat className="size-4" strokeWidth={1.8} />
+                Try it on {FEATURED_POST.title}
+              </Link>
+              <Link
+                to="/recipes"
+                search={{ q: "", category: "All", sort: "relevance" }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 text-sm font-semibold transition-colors duration-200 hover:border-white/60"
+              >
+                Browse all recipes
+              </Link>
+            </div>
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-3 lg:w-[360px] lg:grid-cols-1">
+            {[
+              {
+                icon: <Timer className="size-5 text-saffron" strokeWidth={1.7} />,
+                title: "Timers per step",
+                text: "Tap once — the timer runs while you cook.",
+              },
+              {
+                icon: <ListChecks className="size-5 text-saffron" strokeWidth={1.7} />,
+                title: "Ingredient checklist",
+                text: "Tick things off as they go into the pan.",
+              },
+              {
+                icon: <ChefHat className="size-5 text-saffron" strokeWidth={1.7} />,
+                title: "One step per screen",
+                text: "No scrolling mid-simmer, ever.",
+              },
+            ].map((f) => (
+              <li
+                key={f.title}
+                className="rounded-2xl border border-white/12 bg-white/[0.04] p-5 backdrop-blur-sm"
+              >
+                {f.icon}
+                <p className="mt-3 font-serif text-lg text-[#f8f4ea]">{f.title}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#f3ede2]/60">{f.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Reveal>
+
       {/* BLOG */}
       <Reveal as="section" className={`${shell} mt-24`}>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow">Blog</p>
+            <p className="eyebrow">Kitchen notes</p>
             <h2 className="display-lg mt-3">From the kitchen.</h2>
           </div>
           <Link
             to="/blog"
             className="group inline-flex items-center gap-2 text-sm font-semibold text-primary"
           >
-            Read the blog
+            Stories & archive
             <ArrowRight
               className="size-4 transition-transform duration-200 group-hover:translate-x-1"
               strokeWidth={1.8}
