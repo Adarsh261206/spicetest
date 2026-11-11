@@ -512,6 +512,12 @@
 .legacy-post-step strong {
   color: var(--color-foreground);
 }
+/* Old Blogger steps are often wrapped in <i>; render them as normal copy. */
+.legacy-post-step i,
+.legacy-post-step em {
+  font-style: normal;
+  color: inherit;
+}
 .legacy-post-step a {
   color: var(--color-primary-deep);
   text-decoration: underline;

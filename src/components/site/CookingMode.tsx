@@ -9,8 +9,8 @@ import type { PostBlock } from "@/lib/blocks";
 /* Articles / archive: normalized HTML split into slides.              */
 /* ------------------------------------------------------------------ */
 
-export type CookIngredient = { name: string; qty?: string };
-export type CookStep = { text: string; timer?: number };
+export type CookIngredient = { name: string; qty?: string; group?: string };
+export type CookStep = { text: string; timer?: number; kicker?: string };
 export type ArticleSlide = { kicker?: string; html: string };
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -93,7 +93,7 @@ function StepTimer({ minutes, dark }: { minutes: number; dark?: boolean }) {
       type="button"
       onClick={() => setLeft(left === null ? minutes * 60 : null)}
       className={cn(
-        "mt-8 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all active:scale-95",
+        "mt-8 inline-flex items-center gap-2 self-start rounded-full border px-5 py-2.5 text-sm font-semibold transition-all active:scale-95",
         dark
           ? "border-white/25 text-white hover:border-white/60"
           : "border-border hover:border-primary",
@@ -187,33 +187,45 @@ export function CookingMode({
       </div>
 
       {/* Body */}
-      <div className="grid flex-1 gap-10 overflow-y-auto px-5 py-10 sm:px-10 lg:grid-cols-[1fr_320px] lg:overflow-hidden">
-        <div className="flex min-h-[40vh] flex-col justify-center lg:overflow-y-auto">
-          {step ? (
-            <>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
-                Step {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-              </p>
-              <p className="mt-6 max-w-3xl font-serif text-3xl leading-snug sm:text-4xl lg:text-5xl">
-                {step.text}
-              </p>
-              {step.timer && <StepTimer minutes={step.timer} dark />}
-            </>
-          ) : (
-            slide && (
+      <div className="grid flex-1 content-start gap-10 overflow-y-auto px-5 py-10 sm:px-10 lg:content-stretch lg:grid-cols-[1fr_320px] lg:overflow-hidden">
+        <div className="flex flex-col lg:h-full lg:overflow-y-auto">
+          <div className="my-auto w-full">
+            {step ? (
               <>
-                {slide.kicker && (
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
-                    {slide.kicker} · {index + 1} / {total}
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+                  Step {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+                </p>
+                {step.kicker && (
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-[#e0a458]">
+                    {step.kicker}
                   </p>
                 )}
-                <div
-                  className="cook-slide mt-6 max-w-3xl font-serif text-2xl leading-snug sm:text-3xl lg:text-4xl"
-                  dangerouslySetInnerHTML={{ __html: slide.html }}
-                />
+                <p
+                  className={cn(
+                    "max-w-3xl font-serif text-3xl leading-snug sm:text-4xl lg:text-5xl",
+                    step.kicker ? "mt-3" : "mt-6",
+                  )}
+                >
+                  {step.text}
+                </p>
+                {step.timer && <StepTimer minutes={step.timer} dark />}
               </>
-            )
-          )}
+            ) : (
+              slide && (
+                <>
+                  {slide.kicker && (
+                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+                      {slide.kicker} · {index + 1} / {total}
+                    </p>
+                  )}
+                  <div
+                    className="cook-slide mt-6 max-w-3xl font-serif text-2xl leading-snug sm:text-3xl lg:text-4xl"
+                    dangerouslySetInnerHTML={{ __html: slide.html }}
+                  />
+                </>
+              )
+            )}
+          </div>
         </div>
 
         {ingredients && ingredients.length > 0 && (
@@ -224,8 +236,14 @@ export function CookingMode({
             <ul className="mt-5 space-y-3.5">
               {ingredients.map((ing, i) => {
                 const done = checked.includes(i);
+                const groupStart = Boolean(ing.group) && ing.group !== ingredients[i - 1]?.group;
                 return (
-                  <li key={i}>
+                  <li key={i} className={cn(groupStart && i > 0 && "pt-3")}>
+                    {groupStart && (
+                      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#e0a458]">
+                        {ing.group}
+                      </p>
+                    )}
                     <label className="flex cursor-pointer items-start gap-3 text-[15px] leading-relaxed">
                       <input
                         type="checkbox"

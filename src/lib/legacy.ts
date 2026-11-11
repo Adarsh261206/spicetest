@@ -76,12 +76,31 @@ export function formatLegacyDate(iso: string): string {
 /* readable article markup (paragraphs, headings, lists, figures).     */
 /* ------------------------------------------------------------------ */
 
-const stripTags = (s: string) =>
+/** Decode the entities Blogger actually leaves behind (without turning &lt; into real markup). */
+export const decodeEntities = (s: string) =>
   s
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*39;|&apos;/gi, "'");
+
+const stripTags = (s: string) =>
+  decodeEntities(s.replace(/<[^>]+>/g, ""))
     .replace(/\s+/g, " ")
     .trim();
+
+/** List items keep light emphasis (bold "Marinate:" leads) but lose unsafe markup. */
+const KEEP_INLINE = /^<\/?(?:b|strong|i|em)\b[^>]*>$/i;
+const cleanInline = (s: string) =>
+  decodeEntities(s.replace(/<[^>]+>/g, (tag) => (KEEP_INLINE.test(tag) ? tag : "")))
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** "2 big cardamoms" is an ingredient, not a heading — but "1. Banana Oatmeal Smoothie" may be one. */
+function startsWithQuantity(s: string): boolean {
+  if (/^\d+[.)]\s*[A-Za-z]/.test(s)) return false;
+  return /^(?:\d+(?:[./]\d+)?|[¼½¾⅓⅔⅛])/.test(s);
+}
 
 function boldOnlyText(s: string): string {
   const withoutBold = s
@@ -185,7 +204,7 @@ const STEP_CONNECTOR = /^(first|next|then|now|finally|after that|once)\b[, ]/i;
 
 /** "1. Wash the meat" / "Heat the oil" / "In a bowl, mix…" / "For the pie crust, using…" */
 function looksLikeStep(text: string): boolean {
-  if (/^\d+[.)]\s+\S/.test(text)) return true;
+  if (/^\d+[.)]\s*[A-Za-z]/.test(text)) return true;
   if (/^for the [a-z ]+,/i.test(text)) return true;
   if (STEP_CONNECTOR.test(text)) return true;
   if (/^in (a|an|the) /i.test(text)) return true;
@@ -239,8 +258,8 @@ export function legacyBody(post: LegacyPost): string {
   // Real lists stay lists (rebuilt cleanly so stray markup can't leak in).
   html = html.replace(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag: string, inner: string) => {
     const items = [...inner.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
-      .map((m) => stripTags(m[1] ?? ""))
-      .filter(Boolean)
+      .map((m) => cleanInline(m[1] ?? ""))
+      .filter((t) => stripTags(t))
       .map((t) => `<li>${t}</li>`)
       .join("");
     if (!items) return `\n\n${stripTags(inner)}\n\n`;
@@ -276,6 +295,9 @@ export function legacyBody(post: LegacyPost): string {
       return "\n\n";
     },
   );
+
+  // Remaining figures (clean semantic HTML from hand-edited posts) -> block slots.
+  html = html.replace(/<figure>[\s\S]*?<\/figure>/gi, (fig) => blockSlot(fig));
 
   // Remaining tables (rare, non-caption): keep cell text, drop chrome.
   html = html.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_m, inner: string) => {
@@ -348,16 +370,50 @@ export function legacyBody(post: LegacyPost): string {
     const text = stripTags(line);
     if (!text) continue;
 
+    // Some posts run the first instruction into the label itself:
+    // "Method: Preheat oven to 375°F." Treat the label as the heading and the
+    // remainder as the first step (splitting any numbered steps in that line).
+    const inlineMethod = text.match(
+      /^(method|preparation|procedure|directions?|instructions?)\s*[.:]\s*(.+)$/i,
+    );
+    if (inlineMethod) {
+      closeList();
+      const methodLabel = inlineMethod[1]!;
+      const heading = methodLabel.charAt(0).toUpperCase() + methodLabel.slice(1).toLowerCase();
+      out.push(`<h3>${heading}</h3>`);
+      list = "ol";
+      headingKind = "method";
+      lastH3Kind = "method";
+      const firstSteps = inlineMethod[2]!
+        .split(/\s+(?=\d+[.)]\s+)/)
+        .map((step) => step.replace(/^\d+[.)]\s*/, "").trim())
+        .filter(Boolean);
+      if (!listOpen) {
+        out.push("<ol>");
+        listOpen = true;
+      }
+      for (const step of firstSteps) {
+        const item = balanceInline(step);
+        out.push(`<li>${item}</li>`);
+        lastLiText = stripTags(item);
+      }
+      continue;
+    }
+
     const bold = boldOnlyText(line);
-    // Plain section labels: "Ingredients", "Ingredients:", "Method;",
-    // "Method for marinade". Digits excluded so "Ingredients: 2 cups" is not
-    // mistaken for a heading.
+    // Plain section labels: "Ingredients", "Ingredients.", "Ingredients (Kadhi)",
+    // "Method;", "Method for marinade". Digits excluded so "Ingredients: 2 cups"
+    // is not mistaken for a heading.
     const plainSection =
-      /^(ingredients?|method|preparation|procedure|directions?|instructions?|how to make)\b[a-zA-Z\s&,':;-]{0,30}$/i.test(
+      /^(ingredients?|method|preparation|procedure|directions?|instructions?|how to make)\b[a-zA-Z\s&,':;().-]{0,30}$/i.test(
         text,
       ) && text.length <= 45;
     const label = (
-      bold && bold.length <= 90 && /[a-zA-Z]/.test(bold) ? bold : plainSection ? text : ""
+      bold && !startsWithQuantity(bold) && bold.length <= 90 && /[a-zA-Z]/.test(bold)
+        ? bold
+        : plainSection
+          ? text
+          : ""
     ).replace(/[;:]\s*$/, "");
     if (label) {
       closeList();
@@ -378,7 +434,50 @@ export function legacyBody(post: LegacyPost): string {
       }
       continue;
     }
-    if (list && text.length <= LIST_ITEM_MAX) {
+    // Standalone "For the crust" / "For veg's" lines inside an ingredient
+    // list are group labels, not ingredients.
+    if (
+      list &&
+      headingKind === "ingredients" &&
+      !startsWithQuantity(text) &&
+      /^(for|to make|to serve)\b/i.test(text) &&
+      text.length <= 50 &&
+      text.split(/\s+/).length <= 8 &&
+      !/[,.!?]/.test(text) &&
+      !/\d/.test(text)
+    ) {
+      closeList();
+      out.push(`<h4>${text.replace(/[;:]\s*$/, "")}</h4>`);
+      list = "ul";
+      headingKind = "ingredients";
+      continue;
+    }
+    // Method prose sometimes trails an ingredient list (often after photos)
+    // with no Method heading — or an inline photo splits the step list. The
+    // next real step restarts the ordered list.
+    if (
+      !list &&
+      (headingKind === "ingredients" || headingKind === "method") &&
+      looksLikeStep(text)
+    ) {
+      if (headingKind !== "method") {
+        out.push(`<h3>Method</h3>`);
+        lastH3Kind = "method";
+      }
+      list = "ol";
+      headingKind = "method";
+    }
+    // Standalone labels inside a method run ("Marinate:", "Serving soup:")
+    // are sub-headings, not steps.
+    if (headingKind === "method" && isMiniLabel(text)) {
+      closeList();
+      out.push(`<h4>${text.replace(/[;:]\s*$/, "")}</h4>`);
+      list = "ol";
+      continue;
+    }
+    // Method paragraphs in old posts can run well past the ingredient limit;
+    // they are still steps once a Method section is open.
+    if (list && (headingKind === "method" || text.length <= LIST_ITEM_MAX)) {
       // Old posts sometimes keep the whole method inside the Ingredients
       // list — or after a bold sub-label like "For making the broth" — with
       // no Method heading. The first real step starts a Method run (once per
@@ -392,8 +491,6 @@ export function legacyBody(post: LegacyPost): string {
         list = "ol";
         headingKind = "method";
       }
-      // Plain sub-labels inside a method run ("Marinate:", "Serving soup:").
-      if (headingKind === "method" && isMiniLabel(text)) continue;
       if (!listOpen) {
         out.push(list === "ul" ? "<ul>" : "<ol>");
         listOpen = true;
@@ -424,5 +521,42 @@ export function legacyBody(post: LegacyPost): string {
   }
   closeList();
 
-  return out.join("\n").trim();
+  // Some posts list ingredients as bare paragraphs with no "Ingredients"
+  // heading. Recover the run immediately before a method heading.
+  const hasIngredientHeading = out.some((line) => /^<h3>ingredients/i.test(line));
+  const methodIndex = out.findIndex((line) =>
+    /^<h3>[^<]*(?:method|proced|directions?|instructions?|preparation)[^<]*<\/h3>$/i.test(line),
+  );
+  if (!hasIngredientHeading && methodIndex > 0) {
+    const run: number[] = [];
+    for (let i = methodIndex - 1; i >= 0 && run.length < 24; i -= 1) {
+      const paragraph = out[i]!.match(/^<p>([\s\S]*)<\/p>$/);
+      if (!paragraph) break;
+      const text = stripTags(paragraph[1] ?? "");
+      const ingredientish =
+        startsWithQuantity(text) || (text.length <= 60 && /^[A-Za-z][^.!?]*$/.test(text));
+      if (!ingredientish) break;
+      run.unshift(i);
+    }
+    const itemTexts = run.map((i) => stripTags(out[i]!.replace(/^<p>/, "").replace(/<\/p>$/, "")));
+    const quantityLed = itemTexts.filter(startsWithQuantity).length;
+    if (run.length >= 3 && quantityLed / itemTexts.length >= 0.6) {
+      const list = run
+        .map((i) => `<li>${cleanInline(out[i]!.replace(/^<p>/, "").replace(/<\/p>$/, ""))}</li>`)
+        .join("\n");
+      out.splice(run[0]!, run.length, `<h3>Ingredients</h3>`, `<ul>${list}</ul>`);
+    }
+  }
+
+  let body = out.join("\n").trim();
+  // Some posts repeat the title as their first body paragraph — the page
+  // already renders it as the H1.
+  const firstParagraph = body.match(/^<p>([\s\S]*?)<\/p>/);
+  if (
+    firstParagraph &&
+    stripTags(firstParagraph[1] ?? "").toLowerCase() === post.title.trim().toLowerCase()
+  ) {
+    body = body.slice(firstParagraph[0].length).trim();
+  }
+  return body;
 }

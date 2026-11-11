@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, ChefHat, Flame, ListChecks, Search, Timer, Users } from "lucide-react";
-import heroOne from "@/assets/hero-1.jpg";
-import heroTwo from "@/assets/hero-2.jpg";
+import heroBalushahi from "@/assets/hero-balushahi.jpg";
 import {
   about,
   articles,
@@ -208,25 +207,13 @@ function Home() {
             <SealBadge />
             <div className="zoom-media overflow-hidden rounded-[2rem] border border-border">
               <img
-                src={heroOne}
-                alt="A freshly cooked dish from the Spice N Flavors kitchen"
-                width={900}
+                src={heroBalushahi}
+                alt="Balushahi, a North Indian dessert, on a silver tray"
+                width={1600}
                 height={1200}
                 fetchPriority="high"
                 decoding="async"
                 className="aspect-4/5 w-full object-cover"
-              />
-            </div>
-
-            <div className="zoom-media absolute -bottom-8 -left-4 w-44 overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-float)] sm:-left-10 sm:w-60">
-              <img
-                src={heroTwo}
-                alt="Fresh cooking from the Spice N Flavors kitchen"
-                width={800}
-                height={600}
-                loading="lazy"
-                decoding="async"
-                className="aspect-4/3 w-full object-cover"
               />
             </div>
 
