@@ -101,32 +101,75 @@ export const loginFn = createServerFn({ method: "POST" })
     const email = data.email.trim().toLowerCase();
     if (!email || !data.password) throw new Error("INVALID_CREDENTIALS");
     if (isRateLimited(email)) throw new Error("RATE_LIMITED");
-    const { getDb, users, sessions, verifyPassword, createHash, randomBytes, setCookie } =
-      await srv();
-    const { drizzle } = await getDb();
-    const found = await drizzle.select().from(users).where(eq(users.email, email)).limit(1);
-    const user = found[0] as
-      { id: string; email: string; passSalt: string; passHash: string } | undefined;
-    if (!user || !verifyPassword(data.password, user.passSalt, user.passHash)) {
-      recordFailure(email);
-      throw new Error("INVALID_CREDENTIALS");
+    const {
+      getDb,
+      users,
+      sessions,
+      verifyPassword,
+      hashPassword,
+      newSalt,
+      createHash,
+      randomBytes,
+      randomUUID,
+      setCookie,
+    } = await srv();
+    try {
+      const { drizzle } = await getDb();
+      const found = await drizzle.select().from(users).where(eq(users.email, email)).limit(1);
+      let user = found[0] as
+        { id: string; email: string; passSalt: string; passHash: string } | undefined;
+      // Vercel env credentials double as a first-login bootstrap / password
+      // recovery path for the single admin account.
+      const envEmail = (process.env["ADMIN_EMAIL"] ?? "").trim().toLowerCase();
+      const envPassword = process.env["ADMIN_PASSWORD"] ?? "";
+      const envMatch = Boolean(
+        envEmail && envPassword && email === envEmail && data.password === envPassword,
+      );
+      if (!user) {
+        if (!envMatch) {
+          recordFailure(email);
+          throw new Error("INVALID_CREDENTIALS");
+        }
+        const salt = newSalt();
+        const id = randomUUID();
+        const passHash = hashPassword(envPassword, salt);
+        await drizzle
+          .insert(users)
+          .values({ id, email, passHash, passSalt: salt, createdAt: new Date().toISOString() });
+        user = { id, email, passSalt: salt, passHash };
+      } else if (!verifyPassword(data.password, user.passSalt, user.passHash)) {
+        if (!envMatch) {
+          recordFailure(email);
+          throw new Error("INVALID_CREDENTIALS");
+        }
+        const salt = newSalt();
+        const passHash = hashPassword(envPassword, salt);
+        await drizzle.update(users).set({ passHash, passSalt: salt }).where(eq(users.email, email));
+        user = { ...user, passSalt: salt, passHash };
+      }
+      clearAttempts(email);
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000).toISOString();
+      await drizzle.insert(sessions).values({
+        tokenHash: createHash("sha256").update(token).digest("hex"),
+        userId: user.id,
+        expiresAt,
+      });
+      setCookie(COOKIE, token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env["NODE_ENV"] === "production",
+        maxAge: SESSION_DAYS * 86400,
+        path: "/",
+      });
+      return { email: user.email };
+    } catch (e) {
+      const error = e as Error & { code?: string };
+      if (error.message === "INVALID_CREDENTIALS" || error.message === "RATE_LIMITED") throw e;
+      if (error.name === "DbNotConfigured") throw new Error("DB_NOT_CONFIGURED");
+      if (error.code === "42P01") throw new Error("DB_NOT_MIGRATED");
+      throw e;
     }
-    clearAttempts(email);
-    const token = randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000).toISOString();
-    await drizzle.insert(sessions).values({
-      tokenHash: createHash("sha256").update(token).digest("hex"),
-      userId: user.id,
-      expiresAt,
-    });
-    setCookie(COOKIE, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env["NODE_ENV"] === "production",
-      maxAge: SESSION_DAYS * 86400,
-      path: "/",
-    });
-    return { email: user.email };
   });
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {

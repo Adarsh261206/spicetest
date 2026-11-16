@@ -56,10 +56,15 @@ function AdminLogin() {
             await loginFn({ data: { email, password } });
             await navigate({ to: "/admin" });
           } catch (e) {
+            const message = e instanceof Error ? e.message : "";
             setError(
-              e instanceof Error && e.message === "RATE_LIMITED"
+              message === "RATE_LIMITED"
                 ? "Too many wrong tries — wait 10 minutes and try again."
-                : "Wrong email or password.",
+                : message === "DB_NOT_CONFIGURED"
+                  ? "Database not connected — set DATABASE_URL on Vercel."
+                  : message === "DB_NOT_MIGRATED"
+                    ? "Database tables are missing — run the migrations."
+                    : "Wrong email or password.",
             );
           } finally {
             setBusy(false);
