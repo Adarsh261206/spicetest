@@ -45,7 +45,7 @@ export const brand = {
   tagline: "Recipes, stories and traditions worth bringing to the table.",
   hero: {
     eyebrow: "Spice N Flavors",
-    headline: "A world of flavor.",
+    headline: "A World of Flavors",
     support: "Recipes, stories and traditions worth bringing to the table.",
     primaryCta: "Explore Recipes",
     secondaryCta: "Browse all recipes",

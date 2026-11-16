@@ -370,12 +370,27 @@ const RULES: { cat: Exclude<LegacyCategory, "">; words: string[] }[] = [
 const wordSet = (s: string): Set<string> =>
   new Set((s.toLowerCase().match(/[a-z]+/g) ?? []).filter((w) => w.length >= 3));
 
+/** Hand-checked categories for posts the keyword rules misclassify. */
+const CATEGORY_OVERRIDES: Record<string, Exclude<LegacyCategory, "">> = {
+  "creamy-butter-chicken": "Main Course",
+  "baked-and-grilled-salmon": "Main Course",
+  "kala-chana-curry": "Main Course",
+  "masala-kheema-pav": "Main Course",
+  "dahi-vadas": "Starters",
+  "kadai-paneer-ki-subzi": "Main Course",
+  "vegetable-jalfrezi": "Main Course",
+  "paneer-tikka-bbq-skewers-and-refreshing": "Starters",
+  "bhel-poori-chatpatey-snacks": "Street Food",
+};
+
 /** Best-effort category from title/tags/excerpt. "" = not a food post / unknown. */
 export function legacyCategory(post: {
+  slug?: string;
   title: string;
   tags: string[];
   excerpt: string;
 }): LegacyCategory {
+  if (post.slug && CATEGORY_OVERRIDES[post.slug]) return CATEGORY_OVERRIDES[post.slug]!;
   const hay = `${post.title} ${post.tags.join(" ")} ${post.excerpt}`;
   const lower = ` ${hay.toLowerCase().replace(/[^a-z]+/g, " ")} `;
   const words = wordSet(hay);

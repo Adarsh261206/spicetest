@@ -114,9 +114,9 @@ function Home() {
           <div className="max-w-xl">
             <p className="eyebrow">{brand.hero.eyebrow}</p>
             <h1 className="display-xl mt-5">
-              A world of
+              A World of
               <span className="block italic text-primary">
-                <span className="ink-mark">flavor.</span>
+                <span className="ink-mark">Flavors</span>
               </span>
             </h1>
             <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">

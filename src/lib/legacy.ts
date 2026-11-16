@@ -26,7 +26,67 @@ export type LegacyPost = {
   html: string;
 };
 
-export const legacyPosts = legacyPostsJson as LegacyPost[];
+const TITLE_SMALL_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "as",
+  "at",
+  "but",
+  "by",
+  "for",
+  "from",
+  "in",
+  "into",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "with",
+]);
+
+const TITLE_WORD_OVERRIDES = new Map([["holi", "Holi"]]);
+
+function titleCaseToken(token: string, edge: boolean): string {
+  return token
+    .split(/([~/–—-])/)
+    .map((part) => {
+      if (!part || /^[~/–—-]$/.test(part)) return part;
+      const match = part.match(/^([^A-Za-z0-9]*)([A-Za-z0-9][A-Za-z0-9'’]*)([^A-Za-z0-9]*)$/);
+      if (!match) return part;
+      const [, lead = "", core = "", trail = ""] = match;
+      const override = TITLE_WORD_OVERRIDES.get(core.toLowerCase());
+      if (override) return `${lead}${override}${trail}`;
+      if (/[A-Z]{2,}/.test(core) || /[A-Z]/.test(core.slice(1))) return part;
+      const lower = core.toLowerCase();
+      if (!edge && TITLE_SMALL_WORDS.has(lower)) return `${lead}${lower}${trail}`;
+      return `${lead}${lower.charAt(0).toUpperCase()}${lower.slice(1)}${trail}`;
+    })
+    .join("");
+}
+
+export function titleCaseRecipeTitle(title: string): string {
+  const words = title.replace(/\s+/g, " ").trim().split(" ");
+  return words
+    .map((word, index) => titleCaseToken(word, index === 0 || index === words.length - 1))
+    .join(" ");
+}
+
+/** Strip stray markup / Blogger spacing characters from visible text. */
+const cleanLegacyText = (value: string) =>
+  value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const legacyPosts = (legacyPostsJson as LegacyPost[]).map((post) => ({
+  ...post,
+  title: titleCaseRecipeTitle(cleanLegacyText(post.title)),
+  excerpt: cleanLegacyText(post.excerpt),
+}));
 
 const FALLBACKS = [
   fallback1,
@@ -520,6 +580,29 @@ export function legacyBody(post: LegacyPost): string {
     out.push(`<p>${balanceInline(line)}</p>`);
   }
   closeList();
+
+  // Rejoin paragraphs that Blogger split mid-sentence ("…try making it at" /
+  // "home. This recipe…").
+  let paragraphIndex = 1;
+  while (paragraphIndex < out.length) {
+    const previous = out[paragraphIndex - 1]!.match(/^<p>([\s\S]*)<\/p>$/);
+    const current = out[paragraphIndex]!.match(/^<p>([\s\S]*)<\/p>$/);
+    if (previous && current) {
+      const previousText = stripTags(previous[1] ?? "");
+      const currentText = stripTags(current[1] ?? "");
+      if (
+        previousText &&
+        currentText &&
+        !/[.!?:;)\]"'”’]\s*$/.test(previousText) &&
+        /^[a-z(]/.test(currentText)
+      ) {
+        out[paragraphIndex - 1] = `${out[paragraphIndex - 1]!.slice(0, -4)} ${current[1]}</p>`;
+        out.splice(paragraphIndex, 1);
+        continue;
+      }
+    }
+    paragraphIndex += 1;
+  }
 
   // Some posts list ingredients as bare paragraphs with no "Ingredients"
   // heading. Recover the run immediately before a method heading.
