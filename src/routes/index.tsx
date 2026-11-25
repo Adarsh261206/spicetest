@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, ChefHat, Flame, ListChecks, Search, Timer, Users } from "lucide-react";
+import { ArrowRight, ChefHat, ListChecks, Search, Timer, Users } from "lucide-react";
 import heroBalushahi from "@/assets/hero-balushahi.jpg";
 import {
   about,
@@ -35,46 +35,19 @@ export const Route = createFileRoute("/")({
 
 const shell = "mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12";
 
-/** Rotating sticker seal over the hero photo. */
-function SealBadge() {
-  return (
-    <div className="absolute -left-4 -top-5 z-10 hidden size-28 place-items-center rounded-full bg-ink text-[#f3ede2] shadow-[var(--shadow-float)] lg:grid">
-      <svg viewBox="0 0 100 100" className="spin-slow absolute inset-0 size-full">
-        <defs>
-          <path id="seal-path" d="M 50,50 m -37,0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" />
-        </defs>
-        <text className="fill-[#f3ede2]/85 text-[8.6px] font-semibold tracking-[0.24em] uppercase">
-          <textPath href="#seal-path">Recipes • Stories • Traditions • </textPath>
-        </text>
-      </svg>
-      <span className="font-serif text-2xl leading-none text-saffron">✦</span>
-    </div>
-  );
-}
-
-/** Dish-name ticker strip — keeps the page feeling alive between sections. */
-function DishTicker() {
-  const names = legacyLive.slice(0, 14).map((p) => p.title);
-  return (
-    <section aria-hidden className="overflow-hidden border-y border-border bg-vanilla/60 py-6">
-      <div className="marquee-track">
-        {[0, 1].map((dup) => (
-          <div key={dup} className="flex shrink-0 items-center">
-            {names.map((n) => (
-              <span
-                key={`${dup}-${n}`}
-                className="flex items-center gap-7 whitespace-nowrap px-7 font-serif text-2xl italic text-foreground/75 sm:text-3xl"
-              >
-                {n}
-                <span className="text-sm not-italic text-primary">✦</span>
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+/** Hand-picked best-of covers for the homepage grid. */
+const HOME_GRID_SLUGS = [
+  "creamy-butter-chicken",
+  "paneer-makhani-2",
+  "shahi-mutton-biryani",
+  "aloo-paratha",
+  "besan-ladoos",
+  "masala-kheema-pav",
+];
+const HOME_GRID = HOME_GRID_SLUGS.flatMap((slug) => {
+  const post = legacyBySlug(slug);
+  return post ? [post] : [];
+});
 
 /** The featured post — a real recipe from the blog archive. */
 const FEATURED_POST = legacyBySlug("dal-makhani") ?? legacyLive[0]!;
@@ -83,10 +56,6 @@ function Home() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
-
-  // Category rail still filters the /recipes search; the grid below always
-  // shows the real archive.
-  const grid = legacyLive.slice(0, 6);
 
   const go = (q: string) =>
     navigate({ to: "/recipes", search: { q, category: "All", sort: "relevance" } });
@@ -186,13 +155,7 @@ function Home() {
             </div>
 
             <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium tracking-wide text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Flame className="size-3.5 text-ember" strokeWidth={1.8} /> 160+ recipes
-              </span>
-              <span aria-hidden className="text-border-strong">
-                ·
-              </span>
-              <span>12 cuisines</span>
+              <span>Cuisines across India</span>
               <span aria-hidden className="text-border-strong">
                 ·
               </span>
@@ -204,7 +167,6 @@ function Home() {
 
           {/* Editorial composition */}
           <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-            <SealBadge />
             <div className="zoom-media overflow-hidden rounded-[2rem] border border-border">
               <img
                 src={heroBalushahi}
@@ -224,8 +186,6 @@ function Home() {
           </div>
         </div>
       </section>
-
-      <DishTicker />
 
       {/* FEATURED RECIPE */}
       <Reveal as="section" className="mt-20 bg-vanilla py-16 sm:py-24">
@@ -298,7 +258,7 @@ function Home() {
       {/* EDITORIAL GRID — real archive recipes */}
       <section className={`${shell} mt-10`}>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {grid.map((p, i) => (
+          {HOME_GRID.map((p, i) => (
             <Reveal key={p.slug} delay={i * 70} className={i === 1 || i === 4 ? "lg:mt-10" : ""}>
               <LegacyCard post={p} />
             </Reveal>
@@ -310,7 +270,7 @@ function Home() {
             search={{ q: "", category: "All", sort: "relevance" }}
             className="group inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-semibold transition-colors duration-200 hover:border-primary hover:bg-vanilla"
           >
-            Browse all {legacyLive.length} recipes
+            Browse all recipes
             <ArrowRight
               className="size-4 transition-transform duration-200 group-hover:translate-x-1"
               strokeWidth={1.8}

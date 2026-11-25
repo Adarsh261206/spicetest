@@ -7,9 +7,9 @@ import { Reveal } from "@/components/site/Reveal";
 export const Route = createFileRoute("/about")({
   head: () =>
     buildHead({
-      title: "About — cooking is how we remember",
+      title: "About — good food brings people together",
       description:
-        "Spice N Flavors is a place for Indian recipes that work, stories worth reading and food traditions worth passing on.",
+        "The story behind Spice N Flavors: family recipes, everyday cooking and the belief that good food brings people together.",
       path: "/about",
     }),
   component: AboutPage,

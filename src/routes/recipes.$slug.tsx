@@ -379,13 +379,13 @@ function RecipePage() {
       </div>
 
       {/* MONETIZATION — high-viewability in-article zone + affiliate picks. */}
-      <div className={`${shell} mt-16`}>
+      <div className={`${shell} mt-16 print:hidden`}>
         <AdSlot format="in-article" slot={AD_SLOTS.article} />
         <AffiliateBox />
       </div>
 
       {/* FAQ */}
-      <Reveal as="section" className="mt-24 bg-secondary/60 py-16">
+      <Reveal as="section" className="mt-24 bg-secondary/60 py-16 print:hidden">
         <div className={shell}>
           <h2 className="display-lg">Frequently asked</h2>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -401,7 +401,7 @@ function RecipePage() {
 
       {/* FROM THE JOURNAL — same-cuisine stories */}
       {journal.length > 0 && (
-        <Reveal as="section" className={`${shell} mt-20`}>
+        <Reveal as="section" className={`${shell} mt-20 print:hidden`}>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <h2 className="display-lg">From the journal</h2>
             <Link to="/blog" className="text-sm font-semibold text-primary hover:underline">

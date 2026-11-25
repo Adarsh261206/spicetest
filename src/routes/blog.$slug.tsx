@@ -421,7 +421,7 @@ function LegacyArticlePage({ slug }: { slug: string }) {
 
   const tagsSection =
     topics.length > 0 ? (
-      <section>
+      <section className="print:hidden">
         <h2 className="display-md">Tags</h2>
         <ul className="mt-5 flex flex-wrap gap-2" aria-label="Tags">
           {topics.map((t) => (
@@ -779,7 +779,7 @@ function LegacyArticlePage({ slug }: { slug: string }) {
         )}
       </div>
 
-      <div className={`${shell} mt-10 max-w-3xl`}>
+      <div className={`${shell} mt-10 max-w-3xl print:hidden`}>
         <AdSlot format="in-article" slot={AD_SLOTS.article} />
       </div>
 
@@ -791,7 +791,7 @@ function LegacyArticlePage({ slug }: { slug: string }) {
         onClose={() => setCookingOpen(false)}
       />
 
-      <Reveal as="section" className={`${shell} mt-20`}>
+      <Reveal as="section" className={`${shell} mt-20 print:hidden`}>
         <h2 className="display-lg">Cook this next</h2>
         <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {more.map((a) => (
@@ -962,7 +962,7 @@ function FreshArticlePage({ post }: { post: DbPostPublic }) {
       </div>
 
       {more.length > 0 && (
-        <Reveal as="section" className={`${shell} mt-20`}>
+        <Reveal as="section" className={`${shell} mt-20 print:hidden`}>
           <h2 className="display-lg">Cook this next</h2>
           <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {more.map((a) => (

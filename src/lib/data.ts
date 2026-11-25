@@ -46,7 +46,7 @@ export const brand = {
   hero: {
     eyebrow: "Spice N Flavors",
     headline: "A World of Flavors",
-    support: "Recipes, stories and traditions worth bringing to the table.",
+    support: "We spice up your cuisine with flavors that are both traditional and global.",
     primaryCta: "Explore Recipes",
     secondaryCta: "Browse all recipes",
   },
@@ -169,6 +169,7 @@ export const categories = [
   "All",
   "Breakfast",
   "Starters",
+  "Soups",
   "Main Course",
   "Street Food",
   "Snacks",
@@ -223,12 +224,6 @@ export const cuisineRegions: CuisineRegion[] = [
     blurb:
       "Steamed, lightly sweet and vegetarian by default — the lightest cooking in the country.",
     image: dhokla,
-  },
-  {
-    slug: "punjabi",
-    name: "Punjabi",
-    blurb: "Butter, cream and slow-simmered dal, plus the breads that exist to mop them up.",
-    image: dalMakhani,
   },
   {
     slug: "continental",
@@ -578,7 +573,6 @@ export const difficulties = ["Easy", "Medium", "Advanced"];
 export const cuisines = [
   "North Indian",
   "South Indian",
-  "Punjabi",
   "Gujarati",
   "Bengali",
   "Goan",
@@ -589,10 +583,13 @@ export const cuisines = [
 ];
 
 export const about = {
-  headline: "Cooking is how we remember.",
+  headline: "Every dish starts with this simple belief: good food brings people together!",
   paragraphs: [
-    "Spice N Flavors is a place for recipes that work, stories worth reading and food traditions worth passing on.",
-    "We care about the details that turn a recipe from a list of ingredients into something you will actually want to cook again — the ratio that holds, the step that matters, the note you only learn the third time you make a dish.",
-    "From everyday Indian cooking to dishes that deserve a little more time, every recipe is built around flavor, technique and the joy of sharing food.",
+    "Welcome to Spice N Flavors!",
+    "This site began back in 2011 after a big move from India to the USA. Starting over in a new country wasn’t always easy, and my family was—and is—my greatest strength through every step of that journey. Missing the familiar tastes of home, I stepped into my new kitchen with a spice box, fresh ingredients, plenty of curiosity, and a desire to cook comforting meals for the people I love most.",
+    "What started as a simple place to save the first recipes I tried at home soon grew around our dining table—fueled by my family, who were my earliest taste-testers and my best critics too ;), and who helped me master some of our family favorites.",
+    "The lively friends’ get-togethers became a huge part of our life here. Hosting friends, sharing potlucks, and watching people connect over good food inspired me to keep experimenting and sharing those crowd-pleasing dishes with food lovers everywhere.",
+    "Fifteen years later, I’m thrilled to welcome you to our newly revamped food website. While the site has a fresh new look, the heart behind it remains the same: approachable, step-by-step recipes made in a real family kitchen. Whether you’re cooking an everyday family dinner, recreating traditional Indian favorites, or planning a menu for your next get-together with friends, every recipe here is tested at our table to help you bring bold, welcoming flavors to yours.",
+    "Whether you’ve been cooking alongside us since 2011 or just found your way here today, thank you for being part of this journey. Grab your spices, explore new recipes, and enjoy the culinary experience from our website to create dishes in your home.",
   ],
 };

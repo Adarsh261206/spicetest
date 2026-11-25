@@ -13,16 +13,16 @@ const links = [
 ] as const;
 
 const TICKER = [
-  "161 recipes in one place",
+  "Recipes in one place",
   "Cooking Mode — big steps, built-in timers",
   "New recipes added regularly",
   "From biryani to everyday vegetarian",
-  "Search 160+ recipes by ingredient",
+  "Search recipes by ingredient",
 ];
 
 function AnnouncementTicker() {
   return (
-    <div className="overflow-hidden bg-ink text-[#f3ede2]">
+    <div className="overflow-hidden bg-ink text-[#f3ede2] print:hidden">
       <div className="marquee-track py-2" aria-hidden>
         {[0, 1].map((dup) => (
           <div key={dup} className="flex shrink-0 items-center">
@@ -60,7 +60,7 @@ export function Navbar() {
       <AnnouncementTicker />
       <header
         className={cn(
-          "sticky top-0 z-50 transition-all duration-300",
+          "sticky top-0 z-50 transition-all duration-300 print:hidden",
           elevated
             ? "border-b border-border bg-background/85 backdrop-blur-md"
             : "border-b border-transparent",

@@ -21,7 +21,7 @@ export function CategoryRail({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        "no-scrollbar -mx-6 flex gap-2 overflow-x-auto px-6 pb-1 md:mx-0 md:flex-wrap md:px-0",
+        "no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:flex-wrap md:px-0",
         className,
       )}
     >

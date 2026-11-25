@@ -12,7 +12,7 @@ export const Route = createFileRoute("/cuisines")({
     buildHead({
       title: "Cuisines — regional Indian cooking and beyond",
       description:
-        "North Indian, South Indian, Punjabi, Gujarati, Continental and desserts — explore recipes through the regions that shape them.",
+        "North Indian, South Indian, Gujarati, Continental and desserts — explore recipes through the regions that shape them.",
       path: "/cuisines",
     }),
   component: CuisinesPage,
@@ -25,7 +25,6 @@ const REGION_KEYWORDS: Record<string, RegExp> = {
   "north-indian":
     /makhani|butter|paneer|tikka|naan|dal|rajma|chole|korma|masala|kebab|paratha|biryani/i,
   "south-indian": /dosa|idli|sambar|rasam|upma|uttapam|chettinad|avial|poriyal|kootu/i,
-  punjabi: /paratha|chole|paneer|lassi|samosa|kadhi|rajma|sarson|makki/i,
   gujarati: /dhokla|khaman|thepla|fafda|khandvi|handvo|undhiyu|shrikhand|farsi|khakhra/i,
   continental: /pasta|pizza|bake|baked|salad|soup|sandwich|bread|toast|risotto|penne/i,
   desserts: /./,

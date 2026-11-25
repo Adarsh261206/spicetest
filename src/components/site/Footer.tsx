@@ -36,7 +36,7 @@ const groups = [
 
 export function Footer() {
   return (
-    <footer className="mt-24 bg-ink text-[#f3ede2]">
+    <footer className="mt-24 bg-ink text-[#f3ede2] print:hidden">
       <div className="mx-auto grid max-w-[1440px] gap-12 px-5 py-16 sm:px-8 md:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-12">
         <div className="max-w-sm space-y-4">
           <p className="font-serif text-3xl tracking-tight text-[#f8f4ea]">Spice N Flavors</p>
@@ -45,7 +45,7 @@ export function Footer() {
             down in one kitchen.
           </p>
           <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.2em] uppercase text-saffron">
-            Since 2012 <span aria-hidden>✦</span> 160+ recipes
+            Since 2012
           </p>
         </div>
         {groups.map((g) => (
@@ -78,7 +78,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-6 text-xs text-[#f3ede2]/50 sm:px-8 lg:px-12">
-          <p>© {new Date().getFullYear()} Spice N Flavors. Cooked, tested and written down.</p>
+          <p>Copyright © 2026 Spice N Flavors. Cooked, tested and written down.</p>
           <p className="flex items-center gap-2">
             Made with{" "}
             <span aria-hidden className="text-ember">

@@ -1,7 +1,15 @@
 /** Derived display categories for recovered archive posts (client-safe). */
 
 export type LegacyCategory =
-  "Breakfast" | "Starters" | "Main Course" | "Street Food" | "Snacks" | "Dessert" | "Drinks" | "";
+  | "Breakfast"
+  | "Starters"
+  | "Soups"
+  | "Main Course"
+  | "Street Food"
+  | "Snacks"
+  | "Dessert"
+  | "Drinks"
+  | "";
 
 const RULES: { cat: Exclude<LegacyCategory, "">; words: string[] }[] = [
   {
@@ -246,22 +254,12 @@ const RULES: { cat: Exclude<LegacyCategory, "">; words: string[] }[] = [
     ],
   },
   {
+    cat: "Soups",
+    words: ["soup", "soups", "shorba", "minestrone", "mulligatawny", "tom yum"],
+  },
+  {
     cat: "Starters",
-    words: [
-      "soup",
-      "soups",
-      "salad",
-      "salads",
-      "starter",
-      "starters",
-      "appetizer",
-      "appetizers",
-      "shorba",
-      "minestrone",
-      "mulligatawny",
-      "tom yum",
-      "caesar",
-    ],
+    words: ["salad", "salads", "starter", "starters", "appetizer", "appetizers", "caesar"],
   },
   {
     cat: "Main Course",
@@ -381,6 +379,13 @@ const CATEGORY_OVERRIDES: Record<string, Exclude<LegacyCategory, "">> = {
   "vegetable-jalfrezi": "Main Course",
   "paneer-tikka-bbq-skewers-and-refreshing": "Starters",
   "bhel-poori-chatpatey-snacks": "Street Food",
+  "over-night-chia-pudding": "Breakfast",
+  "bakeless-granola-bars": "Breakfast",
+  "pasta-pesto-chicken": "Main Course",
+  "chili-peanut-chicken": "Snacks",
+  "quinoa-salad": "Starters",
+  "cherry-tomatoes-and-ricotta-baked": "Starters",
+  "sweet-corn-soup": "Soups",
 };
 
 /** Best-effort category from title/tags/excerpt. "" = not a food post / unknown. */
